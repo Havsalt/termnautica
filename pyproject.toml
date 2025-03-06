@@ -1,0 +1,29 @@
+[project]
+name = "subnautica"
+version = "0.1.0"
+description = "Underwater game made using `charz`"
+authors = [
+    { name = "Havsalt", email = "77575424+Havsalt@users.noreply.github.com" }
+]
+dependencies = [
+    "charz[all]==0.0.33",
+]
+readme = "README.md"
+requires-python = ">= 3.13"
+license = { text = "MIT" }
+
+[project.scripts]
+main = "subnautica:main"
+
+[build-system]
+requires = ["maturin~=1.0"]
+build-backend = "maturin"
+
+[tool.rye]
+managed = true
+dev-dependencies = []
+
+[tool.maturin]
+python-source = "python"
+module-name = "rust.render"
+features = ["pyo3/extension-module"]
