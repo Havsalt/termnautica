@@ -10,7 +10,7 @@ class FishAI:
     ACCELERATION: float = 10
     speed: float = 0
 
-    def update(self, delta: float) -> None:
+    def update(self, _delta: float) -> None:
         assert isinstance(self, Sprite), "`Sprite` base missing"
         direction = random.randint(-1, 1)
         if sign(direction) == -1:
@@ -40,6 +40,12 @@ class LongFish(FishAI, Interactable, Sprite):
     color = colex.SALMON
     centered = True
     texture = ["<º)))))}><"]
+
+
+class WaterFish(FishAI, Interactable, Sprite):
+    name = "bladder fish"
+    color = colex.PINK
+    texture = ["<?))<>"]
 
 
 class Kelp(Interactable, AnimatedSprite):
