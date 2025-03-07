@@ -137,7 +137,7 @@ class Ocean(dict[Coordinate, OceanTop | OceanFloor]):
 
     def generate_fish(self) -> None:
         for _ in range(2):
-            for fish in [env.SmallFish, env.Fish, env.LongFish]:
+            for fish in [env.SmallFish, env.Fish, env.LongFish, env.WaterFish]:
                 fish(
                     position=Vec2(
                         random.randint(-20, 20),
