@@ -24,7 +24,7 @@ class RustScreen(_Screen):
             centering_y // 2,
         )
         self.show(out)
-    
+
     def show(self, out: str) -> None:
         actual_size = self.get_actual_size()
         # construct frame

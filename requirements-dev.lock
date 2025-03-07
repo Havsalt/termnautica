@@ -18,6 +18,8 @@ keyboard==0.13.5
     # via charz
 linflex==0.2.2
     # via charz
+simpleaudio==1.0.4
+    # via subnautica
 typing-extensions==4.12.2
     # via charz
     # via linflex

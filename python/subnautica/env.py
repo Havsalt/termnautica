@@ -1,54 +1,10 @@
-import random
-
 import colex
-from charz import AnimatedSprite, AnimationSet, Animation, Sprite, Vec2, text, sign
+from charz import AnimatedSprite, AnimationSet, Animation, Sprite, Vec2
 
-from .interactable import Interactable
-
-
-class FishAI:
-    ACCELERATION: float = 10
-    speed: float = 0
-
-    def update(self, _delta: float) -> None:
-        assert isinstance(self, Sprite), "`Sprite` base missing"
-        direction = random.randint(-1, 1)
-        if sign(direction) == -1:
-            self.texture = self.__class__.texture
-        elif sign(direction) == 1:
-            self.texture = text.flip_lines_h(self.__class__.texture)
-        self.speed += direction * self.ACCELERATION
-        self.position.x += direction
+from .props import Collectable
 
 
-class SmallFish(FishAI, Interactable, Sprite):
-    name = "gold_fish"
-    color = colex.DARK_SALMON
-    centered = True
-    texture = ["<><"]
-
-
-class Fish(FishAI, Interactable, Sprite):
-    name = "cod"
-    color = colex.from_hex("#659285")
-    centered = True
-    texture = ["<[Xx"]
-
-
-class LongFish(FishAI, Interactable, Sprite):
-    name = "salmon"
-    color = colex.SALMON
-    centered = True
-    texture = ["<º)))))}><"]
-
-
-class WaterFish(FishAI, Interactable, Sprite):
-    name = "bladder fish"
-    color = colex.PINK
-    texture = ["<?))<>"]
-
-
-class Kelp(Interactable, AnimatedSprite):
+class Kelp(Collectable, AnimatedSprite):
     name = "kelp"
     color = colex.SEA_GREEN
     animations = AnimationSet(
@@ -75,7 +31,7 @@ class Kelp(Interactable, AnimatedSprite):
             self.is_on_last_frame = True
 
 
-class Ore(Interactable, Sprite):
+class Ore(Collectable, Sprite):
     color = colex.DARK_GRAY
     z_index = 1
     texture = [

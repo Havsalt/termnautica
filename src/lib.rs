@@ -117,6 +117,8 @@ fn render_all(
     Ok(out)
 }
 
+// TODO: Implement flipping and rotation db
+
 #[pymodule]
 fn render(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(render_all, m)?)?;

@@ -4,8 +4,9 @@ from charz import Engine, Camera, Screen, Animation, Vec2
 Animation.folder_path = "python/animations"
 
 from rust import RustScreen
-from .ocean import Ocean
+from .ocean import Ocean, OceanWater
 from .player import Player
+from .building import Lifepod
 
 
 class DevCamera(Camera):
@@ -20,22 +21,30 @@ class DevCamera(Camera):
             self.position.y += 1
 
 
+# TODO: O2 1/2
+# TODO: LIFEPOD 1/3
+# TODO: CRAFTING - WATER 0/4
+
+
 class App(Engine):
     fps = 16
     screen = RustScreen(auto_resize=True)
     clear_console = True
 
     def __init__(self) -> None:
-        self.player = Player().with_position(Vec2(0, 5))
-        DevCamera(self.player).with_mode(
-            Camera.MODE_CENTERED | Camera.MODE_INCLUDE_SIZE
-        ).as_current()
-        # Camera.current.parent = self.player
-        # Camera.current.mode = Camera.MODE_CENTERED
+        camera = (
+            Camera()
+            .with_mode(Camera.MODE_CENTERED | Camera.MODE_INCLUDE_SIZE)
+            .as_current()
+        )
+        self.player = Player()
+        # Attatch camera to player
+        camera.parent = self.player
+        # Attatch lifepod to waving water
+        self.lifepod = Lifepod()
         self.ocean = Ocean()
-
-    # def update(self, delta: float) -> None:
-    #     print(delta)
+        middle_ocean_water = OceanWater().save_rest_location()
+        self.lifepod.parent = middle_ocean_water
 
 
 def main() -> int:

@@ -5,7 +5,7 @@ import colex
 from charz import Sprite, Vec2, Vec2i
 from typing_extensions import Self
 
-from . import env
+from . import env, fish
 from .groupwise import groupwise
 
 
@@ -22,7 +22,7 @@ class OceanFloor(Sprite):
     texture = ["_"]
 
 
-class OceanTop(Sprite):
+class OceanWater(Sprite):
     _WAVE_INTERVAL: float = 3 * 16  # frames
     _WAVE_DURATION: float = 3 * 16  # frames
     _WAVE_AMPLITUDE: float = 2
@@ -73,28 +73,32 @@ class OceanTop(Sprite):
         #     )
 
 
-class Ocean(dict[Coordinate, OceanTop | OceanFloor]):
-    WIDTH: int = 500
+class Ocean(dict[Coordinate, OceanWater | OceanFloor]):
+    _WIDTH: int = 500
 
     def __init__(self) -> None:
         self.generate_ocean_floor()
-        self.generate_ocean_top()
+        self.generate_ocean_water()
         self.generate_fish()
 
-    def generate_ocean_top(self) -> None:
-        for x in range(self.WIDTH):
-            OceanTop().with_global_position(
-                x=x - self.WIDTH // 2,
-                y=random.randint(0, 1),
-            ).save_rest_location()
+    def generate_ocean_water(self) -> None:
+        for x in range(self._WIDTH):
+            (
+                OceanWater()
+                .with_position(
+                    x=x - self._WIDTH // 2,
+                    y=random.randint(0, 1),
+                )
+                .save_rest_location()
+            )
 
     def generate_ocean_floor(self):
         height = 0
         points: list[Vec2i] = []
-        for x_position in range(self.WIDTH):
+        for x_position in range(self._WIDTH):
             height += randf(-1, 1)
             point = Vec2i(
-                x_position - self.WIDTH // 2,
+                x_position - self._WIDTH // 2,
                 int(height) + 15,
             )
             points.append(point)
@@ -118,7 +122,7 @@ class Ocean(dict[Coordinate, OceanTop | OceanFloor]):
             # Make rock color if high up
             if curr.y < 10:
                 ocean_floor.color = colex.GRAY
-            # Store ref
+            # Store ref - For faster collision
             self[curr.to_tuple()] = ocean_floor
             # Generate kelp
             if curr.x < 0 and curr.y > 7:  # Kelp is 6 tall
@@ -137,8 +141,13 @@ class Ocean(dict[Coordinate, OceanTop | OceanFloor]):
 
     def generate_fish(self) -> None:
         for _ in range(2):
-            for fish in [env.SmallFish, env.Fish, env.LongFish, env.WaterFish]:
-                fish(
+            for fish_type in [
+                fish.SmallFish,
+                fish.MediumFish,
+                fish.LongFish,
+                fish.WaterFish,
+            ]:
+                fish_type(
                     position=Vec2(
                         random.randint(-20, 20),
                         random.randint(2, 20),
