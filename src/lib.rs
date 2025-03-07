@@ -1,4 +1,5 @@
 use pyo3::prelude::*;
+use rayon::prelude::*;
 
 const RESET: &str = "\x1b[0m";
 
@@ -22,9 +23,17 @@ fn render_all(
     let mut screen_buf: Vec<Vec<(char, Option<String>)>> =
         vec![vec![(transparency_fill, None); screen_width as usize]; screen_height as usize];
     let nodes_list: Vec<&PyAny> = nodes.extract()?;
+    let mut nodes_z_index_pairs: Vec<_> = nodes_list
+        .iter()
+        .map(|node| {
+            let z_index = node.getattr("z_index").unwrap().extract::<i32>().unwrap();
+            (node, z_index)
+        })
+        .collect();
+    nodes_z_index_pairs.sort_unstable_by(|(_, a), (_, b)| a.cmp(b));
 
     // Render each `TextureNode`
-    for node in nodes_list {
+    for (node, z_index) in nodes_z_index_pairs {
         let is_globally_visible_meth = node.getattr("is_globally_visible")?;
         if !is_globally_visible_meth.call0()?.extract()? {
             continue;
