@@ -3,6 +3,9 @@
 Classes defined here will be used as `mixin components`
 """
 
+import colex
+from charz import Color
+
 # NOTE: Add manually when a new tag is created
 __all__ = [
     "Collectable",
@@ -22,7 +25,14 @@ class Collectable:
         return tags
 
 
-class Interactable: ...
+class Interactable:
+    def grab_focus(self) -> None:
+        assert isinstance(self, Color)
+        self.color = colex.REVERSE + (self.__class__.color or colex.WHITE)
+
+    def loose_focus(self) -> None:
+        assert isinstance(self, Color)
+        self.color = self.__class__.color
 
 
 class Eatable: ...

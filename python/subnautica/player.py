@@ -3,7 +3,7 @@ import keyboard
 from charz import Camera, Sprite, Vec2
 
 from . import ui
-from .props import Collectable, Eatable
+from .props import Collectable, Interactable, Eatable
 from .ui import Item
 
 
@@ -18,7 +18,7 @@ class Player(Sprite):
         "/ | \\",
         " / \\",
     ]
-    _curr_collectable: Sprite | None = None
+    _curr_interactable: Sprite | None = None
 
     def __init__(self) -> None:
         # NOTE: Current `Camera` has to be initialized before `Player.__init__` is called
@@ -32,6 +32,7 @@ class Player(Sprite):
 
     def update(self, _delta: float) -> None:
         self.handle_movement()
+        self.handle_interact()
         self.handle_collect()
         self.handle_oxygen()
         self.handle_hunger()
@@ -98,54 +99,55 @@ class Player(Sprite):
         if self._thirst_bar.value == 0:
             self._health_bar.value = max(0, self._health_bar.value - 1)
 
-    def handle_collect(self) -> None:
-        proximite_collectables: list[tuple[float, Collectable]] = []
+    def handle_interact(self) -> None:
+        proximite_interactables: list[tuple[float, Interactable]] = []
         center = self.global_position + Vec2(2, 1)
 
         for node in Sprite.texture_instances.values():
-            if isinstance(node, Collectable):
+            if isinstance(node, Interactable):
                 dist = center.distance_to(node.global_position)
                 if dist < self._REACH:
-                    proximite_collectables.append((dist, node))
+                    proximite_interactables.append((dist, node))
 
-        # Highlight closest collectable
-        if proximite_collectables:
-            proximite_collectables.sort(key=lambda pair: pair[0])
-            # Allow this because `Collectable` should always be used with `Sprite`
-            if self._curr_collectable is not None:  # Reset color to class color
-                self._curr_collectable.color = self._curr_collectable.__class__.color
+        # Highlight closest interactable
+        if proximite_interactables:
+            proximite_interactables.sort(key=lambda pair: pair[0])
+            # Allow this because `Interactable` should always be used with `Sprite`
+            if self._curr_interactable is not None:  # Reset color to class color
+                self._curr_interactable.color = self._curr_interactable.__class__.color
             # Reverse color of current interactable
-            first = proximite_collectables[0][1]
-            assert isinstance(first, Sprite)
-            self._curr_collectable = first
-            assert (
-                self._curr_collectable.__class__.color is not None
-            ), f"{self._curr_collectable.__class__.__qualname__}.color is `None`"
-            self._curr_collectable.color = (
-                colex.REVERSE + self._curr_collectable.__class__.color
-            )
-        # Or unselect last collectable that *was* in reach
-        elif self._curr_collectable is not None:
-            self._curr_collectable.color = self._curr_collectable.__class__.color
-            self._curr_collectable = None
+            first = proximite_interactables[0][1]
+            assert isinstance(first, Sprite), f"{first.__class__} is missing `Sprite` base"
+            self._curr_interactable = first
+            self._curr_interactable.grab_focus()
+        # Or unselect last interactable that *was* in reach
+        elif self._curr_interactable is not None:
+            assert isinstance(self._curr_interactable, Interactable)
+            self._curr_interactable.loose_focus()
+            self._curr_interactable = None
 
-        # Collect collectable that is in reach and selected
-        if self._curr_collectable is not None:
-            if keyboard.is_pressed("e"):
-                assert isinstance(self._curr_collectable, Collectable)
-                assert (
-                    self._curr_collectable.name is not None
-                ), f"{self._curr_collectable}.name is `None`"
-                item_name = self._curr_collectable.name
-                if not item_name in self._inventory:
-                    self._inventory[item_name] = Item(
-                        item_name,
-                        0,  # Will be incremented to `1` in the next statement
-                        self._curr_collectable.get_tags(),
-                    )
+    def handle_collect(self) -> None:
+        if self._curr_interactable is None:
+            return
+        if not isinstance(self._curr_interactable, Collectable):
+            return
+        # Collect collectable that is selected
+        # `self._curr_interactable` is already in reach
+        if keyboard.is_pressed("e"):
+            assert (
+                self._curr_interactable.name is not None
+            ), f"{self._curr_interactable}.name is `None`"
+            item_name = self._curr_interactable.name
+            if item_name in self._inventory:
                 self._inventory[item_name].count += 1
-                self._curr_collectable.queue_free()
-                self._curr_collectable = None
+            else:  # Insert new item with count of 1
+                self._inventory[item_name] = Item(
+                    item_name,
+                    1,
+                    self._curr_interactable.get_tags(),
+                )
+            self._curr_interactable.queue_free()
+            self._curr_interactable = None
 
     # TODO: Implement
     def on_death(self) -> None:

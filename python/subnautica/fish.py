@@ -3,7 +3,7 @@ import random
 import colex
 from charz import Sprite, text, sign
 
-from .props import Collectable, Eatable
+from .props import Collectable, Interactable, Eatable
 
 
 class FishAI:
@@ -21,7 +21,7 @@ class FishAI:
         self.position.x += direction
 
 
-class BaseFish(FishAI, Eatable, Collectable, Sprite): ...
+class BaseFish(FishAI, Eatable, Interactable, Collectable, Sprite): ...
 
 
 class SmallFish(BaseFish):

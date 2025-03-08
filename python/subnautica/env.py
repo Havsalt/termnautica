@@ -1,10 +1,10 @@
 import colex
 from charz import AnimatedSprite, AnimationSet, Animation, Sprite, Vec2
 
-from .props import Collectable
+from .props import Collectable, Interactable
 
 
-class Kelp(Collectable, AnimatedSprite):
+class Kelp(Interactable, Collectable, AnimatedSprite):
     name = "kelp"
     color = colex.SEA_GREEN
     animations = AnimationSet(
@@ -31,7 +31,7 @@ class Kelp(Collectable, AnimatedSprite):
             self.is_on_last_frame = True
 
 
-class Ore(Collectable, Sprite):
+class Ore(Interactable, Collectable, Sprite):
     color = colex.DARK_GRAY
     z_index = 1
     texture = [
