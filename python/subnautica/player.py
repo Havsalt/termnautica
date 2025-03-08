@@ -118,7 +118,9 @@ class Player(Sprite):
             first = proximite_collectables[0][1]
             assert isinstance(first, Sprite)
             self._curr_collectable = first
-            assert self._curr_collectable.__class__.color is not None
+            assert (
+                self._curr_collectable.__class__.color is not None
+            ), f"{self._curr_collectable.__class__.__qualname__}.color is `None`"
             self._curr_collectable.color = (
                 colex.REVERSE + self._curr_collectable.__class__.color
             )
