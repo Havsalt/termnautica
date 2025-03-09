@@ -1,11 +1,13 @@
 import random
 from math import sin, pi as PI
+from typing import ClassVar
 
 import colex
 from charz import Sprite, Vec2, Vec2i
 from typing_extensions import Self
 
-from . import env, fish
+from . import fish, ores
+from .kelp import Kelp
 from .groupwise import groupwise
 
 
@@ -25,29 +27,53 @@ class OceanFloor(Sprite):
 class OceanWater(Sprite):
     _WAVE_INTERVAL: float = 3 * 16  # frames
     _WAVE_DURATION: float = 3 * 16  # frames
-    _WAVE_AMPLITUDE: float = 2
+    WAVE_AMPLITUDE: float = 2
     _WAVE_LENGTH: float = 100
     z_index = -1
     color = colex.MEDIUM_AQUAMARINE
     texture = ["~"]
-    _elapse_time: float = 0
+    # _elapsed_time: ClassVar[float] = 0
     _wave_time_remaining: float = 0
     _rest_location: Vec2
+
+    @classmethod
+    def advance_wave_time(cls) -> None:  # Call from `App.update`
+        cls._wave_time_remaining -= 1
+        if cls._wave_time_remaining < 0:
+            cls._wave_time_remaining = cls._WAVE_DURATION
+
+    @classmethod
+    def wave_height_at(cls, wave_origin_x: float) -> float:
+        """Calculate wave height at global location
+
+        Args:
+            wave_origin (Vec2): global origin of wave
+
+        Returns:
+            float: global wave height
+        """
+        # Write in math symbols that I'm used to
+        phi = wave_origin_x / cls._WAVE_LENGTH
+        x = cls._wave_time_remaining / cls._WAVE_INTERVAL
+        # Asin(cx + phi) + d
+        return cls.WAVE_AMPLITUDE * sin(2 * PI * x + phi)
 
     def save_rest_location(self) -> Self:
         self._rest_location = self.global_position
         return self
 
-    def update(self, delta: float) -> None:
-        self._wave_time_remaining -= 1
-        if self._wave_time_remaining < 0:
-            self._wave_time_remaining = self._WAVE_DURATION
-        fraction = self._wave_time_remaining / self._WAVE_INTERVAL
-        phi = self._rest_location.x / self._WAVE_LENGTH
+    def update(self, _delta: float) -> None:
         # Asin(cx + phi) + d
         self.position.y = (
-            self._WAVE_AMPLITUDE * sin(2 * PI * fraction + phi) + self._rest_location.y
+            self.wave_height_at(self._rest_location.x) + self._rest_location.y
         )
+
+        # fraction = self._wave_time_remaining / self._WAVE_INTERVAL
+        # phi = self._rest_location.x / self._WAVE_LENGTH
+        # self.position.y = (
+        #     self._WAVE_AMPLITUDE * sin(2 * PI * fraction + phi) + self._rest_location.y
+        # )
+
         # if self._wave_time > 0:
         #     self._wave_time -= 1
         #     fraction = self._wave_time / self._WAVE_INTERVAL
@@ -128,7 +154,7 @@ class Ocean(dict[Coordinate, OceanWater | OceanFloor]):
             if curr.x < 0 and curr.y > 7:  # Kelp is 6 tall
                 if random.randint(1, 100) > 90:
                     kelp = (
-                        env.Kelp()
+                        Kelp()
                         .with_position(Vec2(curr.x + 1, curr.y - 5))
                         .with_z_index(random.randint(0, 1))
                     )
@@ -136,7 +162,7 @@ class Ocean(dict[Coordinate, OceanWater | OceanFloor]):
                         kelp.is_on_last_frame = True
             else:  # Generate ores
                 if random.randint(1, 100) > 92:
-                    ore = random.choice([env.Gold, env.Copper, env.Titanium])
+                    ore = random.choice([ores.Gold, ores.Copper, ores.Titanium])
                     ore(position=Vec2(curr.x - 1, curr.y))
 
     def generate_fish(self) -> None:

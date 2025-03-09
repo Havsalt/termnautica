@@ -1,12 +1,15 @@
+import random
+
 import keyboard
 from charz import Engine, Camera, Screen, Animation, Vec2
 
 Animation.folder_path = "python/animations"
+random.seed(3)
 
 from rust import RustScreen
 from .ocean import Ocean, OceanWater
 from .player import Player
-from .building import Lifepod
+from .buildings import Lifepod
 
 
 class DevCamera(Camera):
@@ -45,6 +48,9 @@ class App(Engine):
         self.ocean = Ocean()
         middle_ocean_water = OceanWater().save_rest_location()
         self.lifepod.parent = middle_ocean_water
+
+    def update(self, _delta: float) -> None:
+        OceanWater.advance_wave_time()
 
 
 def main() -> int:

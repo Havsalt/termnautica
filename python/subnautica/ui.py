@@ -90,11 +90,14 @@ class InfoBar(Label):
 
     @value.setter
     def value(self, value: float) -> None:
-        self._value = value
+        self._value = max(0, value)  # Min value of 0
         percent = value / self.MAX_VALUE
         count = ceil(self.MAX_CELL_COUNT * percent)
         progress = (self.cell_char * count).ljust(self.MAX_CELL_COUNT, self.cell_fill)
         self.text = f"[{progress}]> {self.label}"
+
+    def fill(self) -> None:
+        self.value = self.MAX_VALUE
 
 
 class HealthBar(InfoBar):
