@@ -80,11 +80,7 @@ class Player(Sprite):
     def handle_movement(self) -> None:
         # TODO: Add acceleration and speed for at least Y-axis
         # Fall down while in air, except for when in building
-        if (
-            not self.is_in_ocean()
-            and self.parent is None
-            and isinstance(self.parent, Building)
-        ):
+        if not self.is_in_ocean() and self.parent is None:
             self.position.y += 1
             return
         # Keyboard input
