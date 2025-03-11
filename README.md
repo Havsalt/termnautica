@@ -1,4 +1,4 @@
-# Subnautica
+# Termautica
 
 Underwater game made using `charz`
 

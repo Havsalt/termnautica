@@ -1,5 +1,5 @@
 [project]
-name = "subnautica"
+name = "termnautica"
 version = "0.1.0"
 description = "Underwater game made using `charz`"
 authors = [
@@ -14,7 +14,7 @@ requires-python = ">= 3.13"
 license = { text = "MIT" }
 
 [project.scripts]
-main = "subnautica:main"
+termnautica = "subnautica:main"
 
 [build-system]
 requires = ["maturin~=1.0"]
