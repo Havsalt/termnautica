@@ -4,14 +4,14 @@ from _collections_abc import dict_items, dict_keys, dict_values
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from math import ceil
+from typing import Self
 
 import colex
 from charz import Sprite, Label, Vec2, text
 
-from typing_extensions import Self
 
-
-UI_Z_INDEX: int = 5
+_UI_Z_INDEX: int = 5
+_UI_OFFSET: int = -50
 
 
 @dataclass
@@ -22,8 +22,8 @@ class Item:
 
 
 class Inventory(Sprite):
-    z_index = UI_Z_INDEX
-    position = Vec2(-40, 0)
+    z_index = _UI_Z_INDEX
+    position = Vec2(_UI_OFFSET, 0)
     # color = colex.from_hex(background="#24ac2d")
     color = colex.BOLD + colex.WHITE
 
@@ -73,16 +73,15 @@ class Inventory(Sprite):
 class InfoBar(Label):
     MAX_VALUE: float = 100
     MAX_CELL_COUNT: int = 10
-    z_index = UI_Z_INDEX
+    z_index = _UI_Z_INDEX
     label: str = "<Unset>"
     cell_char: str = "#"
     cell_fill: str = " "
     color = colex.ITALIC + colex.WHITE
     _value: float = 0
 
-    def init(self) -> Self:
+    def __init__(self) -> None:
         self.value = self.MAX_VALUE
-        return self
 
     @property
     def value(self) -> float:
@@ -101,27 +100,27 @@ class InfoBar(Label):
 
 
 class HealthBar(InfoBar):
-    position = Vec2(-40, -5)
+    position = Vec2(_UI_OFFSET, -5)
     label = "Health"
     color = colex.PALE_VIOLET_RED
 
 
 class OxygenBar(InfoBar):
     MAX_VALUE = 30 * 16  # X seconds
-    position = Vec2(-40, -4)
+    position = Vec2(_UI_OFFSET, -4)
     label = "O2"
     color = colex.AQUAMARINE
 
 
 class HungerBar(InfoBar):
     MAX_VALUE = 120 * 16  # X seconds
-    position = Vec2(-40, -3)
+    position = Vec2(_UI_OFFSET, -3)
     label = "Food"
     color = colex.SANDY_BROWN
 
 
 class ThirstBar(InfoBar):
     MAX_VALUE = 90 * 16  # X seconds
-    position = Vec2(-40, -2)
+    position = Vec2(_UI_OFFSET, -2)
     label = "Thirst"
     color = colex.AQUA

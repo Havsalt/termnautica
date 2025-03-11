@@ -18,7 +18,7 @@ class Ladder(Interactable, Sprite):
     color = colex.from_hex("#aaa9ad")
     transparency = " "
     centered = True
-    texture = load_texture("python/sprites/lifepod/ladder.txt")
+    texture = load_texture("lifepod/ladder.txt")
     parent: Lifepod
 
     def on_interact(self, interactor: Player) -> None:
@@ -35,7 +35,7 @@ class Lifepod(Interactable, Building, Sprite):
     highlight_z_index = 0
     color = colex.BOLD + colex.WHITE
     centered = True
-    texture = load_texture("python/sprites/lifepod/front.txt")
+    texture = load_texture("lifepod/front.txt")
     entry_location = Vec2(0, -8)
     exit_location = Vec2(0, -7)
     _curr_interactor: Player | None = None
@@ -60,7 +60,7 @@ class Lifepod(Interactable, Building, Sprite):
         # Change state and texture
         self.interactable = False
         # self.z_index = 2
-        self.texture = load_texture("python/sprites/lifepod/inside.txt")
+        self.texture = load_texture("lifepod/inside.txt")
         self._curr_interactor = interactor
         self._ladder.show()
 
@@ -100,5 +100,5 @@ class Lifepod(Interactable, Building, Sprite):
         self.interactable = True
         # Transition to outside perspective
         self.z_index = self.__class__.z_index
-        self.texture = load_texture("python/sprites/lifepod/front.txt")
+        self.texture = load_texture("lifepod/front.txt")
         self._ladder.hide()

@@ -18,7 +18,7 @@ fn render_all(
     camera_x -= camera_centering_x;
     let mut camera_y: f32 = camera_position.getattr("y")?.extract()?;
     camera_y -= camera_centering_y;
-    let transparency_fill: char = screen.getattr("transparancy_fill")?.extract()?;
+    let transparency_fill: char = screen.getattr("transparency_fill")?.extract()?;
     // Empty 2D screen buffer filled with `screen.transparency_fill`
     let mut screen_buf: Vec<Vec<(char, Option<String>)>> =
         vec![vec![(transparency_fill, None); screen_width as usize]; screen_height as usize];

@@ -1,21 +1,26 @@
 import random
 from math import sin, pi as PI
-from typing import ClassVar
+from typing import Self
 
 import colex
 from charz import Sprite, Vec2, Vec2i
-from typing_extensions import Self
 
-from . import fish, ores
-from .kelp import Kelp
-from .groupwise import groupwise
+from . import spawners
+from .utils import groupwise, randf
 
 
 type Coordinate = tuple[int, int]
 
 
-def randf(a: float, b: float, /) -> float:
-    return random.random() * (b - a) + a
+# TODO: Add spawning requirements, like min and max height
+# NOTE: Order will be randomized for each attempt
+# Percent in int | Min 1, Max 100
+SPAWN_CHANCES: dict[type[spawners.Spawner], int] = {
+    spawners.KelpSpawner: 5,
+    spawners.OreSpawner: 4,
+    spawners.FishSpawner: 4,
+    spawners.BubbleSpawner: 4,
+}
 
 
 class OceanFloor(Sprite):
@@ -25,12 +30,13 @@ class OceanFloor(Sprite):
 
 
 class OceanWater(Sprite):
+    _REST_LEVEL: float = 0  # Where the ocean rests, in world space
+    _WAVE_AMPLITUDE: float = 2
     _WAVE_INTERVAL: float = 3 * 16  # frames
     _WAVE_DURATION: float = 3 * 16  # frames
-    WAVE_AMPLITUDE: float = 2
     _WAVE_LENGTH: float = 100
     z_index = -1
-    color = colex.MEDIUM_AQUAMARINE
+    color = colex.MEDIUM_AQUAMARINE  # + colex.from_rgb(0, 150, 255, background=True)
     texture = ["~"]
     # _elapsed_time: ClassVar[float] = 0
     _wave_time_remaining: float = 0
@@ -56,7 +62,7 @@ class OceanWater(Sprite):
         phi = wave_origin_x / cls._WAVE_LENGTH
         x = cls._wave_time_remaining / cls._WAVE_INTERVAL
         # Asin(cx + phi) + d
-        return cls.WAVE_AMPLITUDE * sin(2 * PI * x + phi)
+        return cls._WAVE_AMPLITUDE * sin(2 * PI * x + phi) + cls._REST_LEVEL
 
     def save_rest_location(self) -> Self:
         self._rest_location = self.global_position
@@ -99,13 +105,13 @@ class OceanWater(Sprite):
         #     )
 
 
+# NOTE: Default `OceanWater` level is 0-1
 class Ocean(dict[Coordinate, OceanWater | OceanFloor]):
     _WIDTH: int = 500
 
     def __init__(self) -> None:
         self.generate_ocean_floor()
         self.generate_ocean_water()
-        self.generate_fish()
 
     def generate_ocean_water(self) -> None:
         for x in range(self._WIDTH):
@@ -150,32 +156,39 @@ class Ocean(dict[Coordinate, OceanWater | OceanFloor]):
                 ocean_floor.color = colex.GRAY
             # Store ref - For faster collision
             self[curr.to_tuple()] = ocean_floor
-            # Generate kelp
-            if curr.x < 0 and curr.y > 7:  # Kelp is 6 tall
-                if random.randint(1, 100) > 90:
-                    kelp = (
-                        Kelp()
-                        .with_position(Vec2(curr.x + 1, curr.y - 5))
-                        .with_z_index(random.randint(0, 1))
-                    )
-                    if random.randint(0, 1):
-                        kelp.is_on_last_frame = True
-            else:  # Generate ores
-                if random.randint(1, 100) > 92:
-                    ore = random.choice([ores.Gold, ores.Copper, ores.Titanium])
-                    ore(position=Vec2(curr.x - 1, curr.y))
+            self.attempt_generate_spawner_at(curr)
 
-    def generate_fish(self) -> None:
-        for _ in range(2):
-            for fish_type in [
-                fish.SmallFish,
-                fish.MediumFish,
-                fish.LongFish,
-                fish.WaterFish,
-            ]:
-                fish_type(
-                    position=Vec2(
-                        random.randint(-20, 20),
-                        random.randint(2, 20),
-                    )
-                )
+    def attempt_generate_spawner_at(self, location: Vec2) -> None:
+        # # Generate kelp spawner
+        # if location.x < 0 and location.y > 7:  # Kelp is 6 tall
+        #     if random.randint(1, 100) > 94:
+        #         spawners.KelpSpawner().with_global_position(
+        #             location + spawners.KelpSpawner.position
+        #         )
+        #         # TODO: Move this into spawner
+        #         # if random.randint(0, 1):  # Apply offset to animation
+        #         #     kelp.is_on_last_frame = True
+        #         return
+        # # Generate ore spawner
+        # if location.x > 0:
+        #     if random.randint(1, 100) > 92:
+        #         spawners.OreSpawner().with_global_position(
+        #             location + spawners.OreSpawner.position
+        #         )
+        # # Generate fish spawner
+        # if random.randint(1, 100) > 95:
+        #     spawners.FishSpawner().with_global_position(
+        #         location + spawners.FishSpawner.position
+        #     )
+        # # Generate bubble spawner
+        # if random.randint(1, 100) > 95:
+        #     spawners.BubbleSpawner().with_global_position(
+        #         location + spawners.BubbleSpawner.position
+        #     )
+        all_spawners = list(SPAWN_CHANCES.keys())
+        random.shuffle(all_spawners)
+        for spawner in all_spawners:
+            chance = SPAWN_CHANCES[spawner]
+            if random.randint(1, 100) <= chance:
+                spawner().with_global_position(location + spawner.position)
+                break

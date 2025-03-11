@@ -3,6 +3,8 @@
 Classes defined here will be used as `mixin components`
 """
 
+from typing import assert_type
+
 import colex
 from charz import Texture, Color, Sprite
 

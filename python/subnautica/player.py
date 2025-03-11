@@ -1,15 +1,15 @@
 import colex
 import keyboard
-from charz import Camera, Sprite, Vec2
+from charz import Camera, Sprite, Label, Vec2
 
 from . import ui
 from .props import Collectable, Interactable, Eatable, Building
 from .ocean import OceanWater
+from .particles import Bubble, Blood
 
 
-# TODO: Implement HP
 class Player(Sprite):
-    position = Vec2(0, 5)
+    position = Vec2(17, -8)
     z_index = 1
     color = colex.AQUA
     transparency = " "
@@ -26,10 +26,28 @@ class Player(Sprite):
         self._inventory = ui.Inventory({"gold": 5, "stone": 7}).with_parent(
             Camera.current
         )
-        self._health_bar = ui.HealthBar(Camera.current).init()
-        self._oxygen_bar = ui.OxygenBar(Camera.current).init()
-        self._hunger_bar = ui.HungerBar(Camera.current).init()
-        self._thirst_bar = ui.ThirstBar(Camera.current).init()
+        self._health_bar = ui.HealthBar().with_parent(Camera.current)
+        self._oxygen_bar = ui.OxygenBar().with_parent(Camera.current)
+        self._hunger_bar = ui.HungerBar().with_parent(Camera.current)
+        self._thirst_bar = ui.ThirstBar().with_parent(Camera.current)
+        self._hotbar1 = Label(
+            self,
+            text="Interact [E",
+            color=colex.SALMON,
+            position=Vec2(40, -5),
+        )
+        self._hotbar2 = Label(
+            self,
+            text="     Eat [1",
+            color=colex.SANDY_BROWN,
+            position=Vec2(40, -3),
+        )
+        self._hotbar3 = Label(
+            self,
+            text="   Drink [2",
+            color=colex.AQUA,
+            position=Vec2(40, -2),
+        )
 
     def update(self, _delta: float) -> None:
         # Order of tasks
@@ -40,15 +58,15 @@ class Player(Sprite):
         self.handle_oxygen()
         self.handle_hunger()
         self.handle_thirst()
-        self.dev_crafting()
+        self.dev_drinking()
         self.dev_eating()
         # Check if dead
         if self._health_bar.value == 0:
             self.on_death()
 
     # DEV
-    def dev_crafting(self) -> None:
-        if keyboard.is_pressed("f"):
+    def dev_drinking(self) -> None:
+        if keyboard.is_pressed("2"):
             if (
                 "bladder fish" in self._inventory
                 and self._inventory["bladder fish"].count >= 1
@@ -57,10 +75,10 @@ class Player(Sprite):
             ):
                 self._inventory["bladder fish"].count -= 1
                 self._inventory["kelp"].count -= 2
-                self._oxygen_bar.fill()
+                self._thirst_bar.fill()
 
     def dev_eating(self) -> None:
-        if keyboard.is_pressed("q"):
+        if keyboard.is_pressed("1"):
             for item_name, item in tuple(self._inventory.items()):
                 if item.count > 0 and Eatable in item.tags:
                     self._inventory[item_name].count -= 1
@@ -103,12 +121,24 @@ class Player(Sprite):
         if not self.is_submerged():
             self._oxygen_bar.fill()
             return
-        # Decrease health if no oxygen
+        # Decrease health if no oxygen, and spawn particles each tick
         if self._oxygen_bar.value == 0:
             self._health_bar.value = self._health_bar.value - 1
+            Blood().with_global_position(
+                x=self.global_position.x - 1,
+                y=self.global_position.y - 1,
+            )
             return
         # Decrease oxygen
         self._oxygen_bar.value = self._oxygen_bar.value - 1
+        raw_count = self._oxygen_bar.MAX_VALUE / self._oxygen_bar.MAX_CELL_COUNT
+        # NOTE: Might be fragile logic, but works at least when
+        #       MAX_VALUE = 300 and MAX_CELL_COUNT = 10
+        if self._oxygen_bar.value % raw_count == 0:
+            Bubble().with_global_position(
+                x=self.global_position.x,
+                y=self.global_position.y - 1,
+            )
 
     def handle_hunger(self) -> None:
         self._hunger_bar.value = max(0, self._hunger_bar.value - 1)

@@ -1,15 +1,20 @@
 import random
 
 import keyboard
-from charz import Engine, Camera, Screen, Animation, Vec2
+from charz import Engine, Camera, Screen, AssetLoader, Vec2
 
-Animation.folder_path = "python/animations"
+AssetLoader.animation_root = "python/animations"
+AssetLoader.texture_root = "python/sprites"
 random.seed(3)
 
 from rust import RustScreen
 from .ocean import Ocean, OceanWater
 from .player import Player
 from .buildings import Lifepod
+
+
+# NOTE: Game time is calculated in frames (int),
+#       because delta time is unstable at the moment
 
 
 class DevCamera(Camera):
@@ -48,6 +53,16 @@ class App(Engine):
         self.ocean = Ocean()
         middle_ocean_water = OceanWater().save_rest_location()
         self.lifepod.parent = middle_ocean_water
+        # DEV
+        # from .fish import WaterFish
+        # from .spawners import Coral
+
+        # for i in range(0, 5):
+        #     f = WaterFish(position=Vec2(20, -10))
+        #     f.position.x += i * 10
+        #     f.position.y += random.randint(-2, 2)
+        #     f.speed_y = -20
+        # Coral().with_global_position(x=20, y=-10)
 
     def update(self, _delta: float) -> None:
         OceanWater.advance_wave_time()
