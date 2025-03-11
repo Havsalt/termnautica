@@ -6,8 +6,8 @@ authors = [
     { name = "Havsalt", email = "77575424+Havsalt@users.noreply.github.com" }
 ]
 dependencies = [
-    "charz[all]==0.0.33",
-    "simpleaudio==1.0.4",
+    "charz[all]==0.0.34",
+    "simpleaudio~=1.0.0",
 ]
 readme = "README.md"
 requires-python = ">= 3.13"

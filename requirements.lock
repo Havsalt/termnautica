@@ -10,13 +10,15 @@
 #   universal: false
 
 -e file:.
-charz==0.0.33
+charz==0.0.34
     # via subnautica
 colex==0.3.1
     # via charz
 keyboard==0.13.5
     # via charz
 linflex==0.2.2
+    # via charz
+pygame==2.6.1
     # via charz
 simpleaudio==1.0.4
     # via subnautica
