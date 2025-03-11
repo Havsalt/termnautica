@@ -1,6 +1,6 @@
 import random
 from math import sin, pi as PI
-from typing import Self
+from typing import Self, ClassVar
 
 import colex
 from charz import Sprite, Vec2, Vec2i
@@ -16,10 +16,10 @@ type Coordinate = tuple[int, int]
 # NOTE: Order will be randomized for each attempt
 # Percent in int | Min 1, Max 100
 SPAWN_CHANCES: dict[type[spawners.Spawner], int] = {
-    spawners.KelpSpawner: 5,
+    spawners.KelpSpawner: 10,
     spawners.OreSpawner: 4,
-    spawners.FishSpawner: 4,
-    spawners.BubbleSpawner: 4,
+    spawners.FishSpawner: 1,
+    spawners.BubbleSpawner: 1,
 }
 
 
@@ -38,8 +38,7 @@ class OceanWater(Sprite):
     z_index = -1
     color = colex.MEDIUM_AQUAMARINE  # + colex.from_rgb(0, 150, 255, background=True)
     texture = ["~"]
-    # _elapsed_time: ClassVar[float] = 0
-    _wave_time_remaining: float = 0
+    _wave_time_remaining: ClassVar[float] = 0
     _rest_location: Vec2
 
     @classmethod
@@ -74,38 +73,7 @@ class OceanWater(Sprite):
             self.wave_height_at(self._rest_location.x) + self._rest_location.y
         )
 
-        # fraction = self._wave_time_remaining / self._WAVE_INTERVAL
-        # phi = self._rest_location.x / self._WAVE_LENGTH
-        # self.position.y = (
-        #     self._WAVE_AMPLITUDE * sin(2 * PI * fraction + phi) + self._rest_location.y
-        # )
 
-        # if self._wave_time > 0:
-        #     self._wave_time -= 1
-        #     fraction = self._wave_time / self._WAVE_INTERVAL
-        #     phi = self._rest_location.x / 100
-        #     target_height = (
-        #         self._rest_location.y
-        #         + sin(2 * PI * fraction + phi) * self._WAVE_AMPLITUDE
-        #     )
-        #     self.position.y = clamp(
-        #         self.position.y,
-        #         target_height,
-        #         0.40,
-        #     )
-        # elif self._elapse_time >= self._WAVE_INTERVAL:
-        #     self._elapse_time -= self._WAVE_INTERVAL
-        #     self._wave_time = self._WAVE_DURATION
-        # else:
-        #     self._elapse_time += 1
-        #     self.position.y = clamp(
-        #         self.position.y,
-        #         self._rest_location.y,
-        #         0.15,
-        #     )
-
-
-# NOTE: Default `OceanWater` level is 0-1
 class Ocean(dict[Coordinate, OceanWater | OceanFloor]):
     _WIDTH: int = 500
 
@@ -159,32 +127,6 @@ class Ocean(dict[Coordinate, OceanWater | OceanFloor]):
             self.attempt_generate_spawner_at(curr)
 
     def attempt_generate_spawner_at(self, location: Vec2) -> None:
-        # # Generate kelp spawner
-        # if location.x < 0 and location.y > 7:  # Kelp is 6 tall
-        #     if random.randint(1, 100) > 94:
-        #         spawners.KelpSpawner().with_global_position(
-        #             location + spawners.KelpSpawner.position
-        #         )
-        #         # TODO: Move this into spawner
-        #         # if random.randint(0, 1):  # Apply offset to animation
-        #         #     kelp.is_on_last_frame = True
-        #         return
-        # # Generate ore spawner
-        # if location.x > 0:
-        #     if random.randint(1, 100) > 92:
-        #         spawners.OreSpawner().with_global_position(
-        #             location + spawners.OreSpawner.position
-        #         )
-        # # Generate fish spawner
-        # if random.randint(1, 100) > 95:
-        #     spawners.FishSpawner().with_global_position(
-        #         location + spawners.FishSpawner.position
-        #     )
-        # # Generate bubble spawner
-        # if random.randint(1, 100) > 95:
-        #     spawners.BubbleSpawner().with_global_position(
-        #         location + spawners.BubbleSpawner.position
-        #     )
         all_spawners = list(SPAWN_CHANCES.keys())
         random.shuffle(all_spawners)
         for spawner in all_spawners:

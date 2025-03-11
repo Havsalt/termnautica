@@ -23,7 +23,7 @@ class Player(Sprite):
 
     def __init__(self) -> None:
         # NOTE: Current `Camera` has to be initialized before `Player.__init__` is called
-        self._inventory = ui.Inventory({"gold": 5, "stone": 7}).with_parent(
+        self._inventory = ui.Inventory({}).with_parent(
             Camera.current
         )
         self._health_bar = ui.HealthBar().with_parent(Camera.current)
@@ -141,14 +141,22 @@ class Player(Sprite):
             )
 
     def handle_hunger(self) -> None:
-        self._hunger_bar.value = max(0, self._hunger_bar.value - 1)
+        self._hunger_bar.value = self._hunger_bar.value - 1
         if self._hunger_bar.value == 0:
-            self._health_bar.value = max(0, self._health_bar.value - 1)
+            self._health_bar.value = self._health_bar.value - 1
+            Blood().with_global_position(
+                x=self.global_position.x - 1,
+                y=self.global_position.y - 1,
+            )
 
     def handle_thirst(self) -> None:
-        self._thirst_bar.value = max(0, self._thirst_bar.value - 1)
+        self._thirst_bar.value = self._thirst_bar.value - 1
         if self._thirst_bar.value == 0:
-            self._health_bar.value = max(0, self._health_bar.value - 1)
+            self._health_bar.value = self._health_bar.value - 1
+            Blood().with_global_position(
+                x=self.global_position.x - 1,
+                y=self.global_position.y - 1,
+            )
 
     def handle_interact_selection(self) -> None:
         proximite_interactables: list[tuple[float, Interactable]] = []
