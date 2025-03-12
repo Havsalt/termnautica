@@ -7,14 +7,15 @@ authors = [
 ]
 dependencies = [
     "charz[all]==0.0.34",
-    "simpleaudio~=1.0.0",
+    "pygame~=2.6",
 ]
 readme = "README.md"
 requires-python = ">= 3.13"
 license = { text = "MIT" }
 
 [project.scripts]
-termnautica = "subnautica:main"
+# TODO: Change main script to `termnautica`
+main = "subnautica:main"
 
 [build-system]
 requires = ["maturin~=1.0"]
