@@ -150,6 +150,6 @@ def generate_floor():
         else:
             ocean_floor = Floor(position=curr)
         # Make rock color if high up
-        if curr.y >= Floor.ROCK_START_HEIGHT:
+        if curr.y <= Floor.ROCK_START_HEIGHT:
             ocean_floor.color = colex.GRAY
         attempt_generate_spawner_at(curr)
