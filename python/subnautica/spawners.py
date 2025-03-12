@@ -6,9 +6,9 @@ from typing import Any, Self, get_origin, get_args, assert_never
 import colex
 from charz import Sprite, Vec2
 
+from . import fish, ores, ocean
 from .kelp import Kelp
 from .particles import Bubble
-from . import fish, ores
 
 
 class SpawnMode(Enum):
@@ -21,11 +21,11 @@ class SpawnMode(Enum):
 
 # TODO: Implement
 class Spawner[T: Sprite](Sprite):
-    SPAWN_INTERVAL: int = 100
-    SPAWN_OFFSET: Vec2 = Vec2.ZERO
-    MAX_ACTIVE_SPAWNS: int = 1
-    SPAWN_MODE: SpawnMode = SpawnMode.RANDOM
-    INITIAL_SPAWN: bool = True
+    _SPAWN_INTERVAL: int = 100
+    _SPAWN_OFFSET: Vec2 = Vec2.ZERO
+    _MAX_ACTIVE_SPAWNS: int = 1
+    _SPAWN_MODE: SpawnMode = SpawnMode.RANDOM
+    _INITIAL_SPAWN: bool = True
     color = colex.BLACK
     texture = ["<Unset Spawner Texture>"]
     _time_until_spawn: int = 0
@@ -35,8 +35,8 @@ class Spawner[T: Sprite](Sprite):
     def __new__(cls, *args: Any, **kwargs: Any) -> Self:
         instance = super().__new__(cls, *args, **kwargs)
         instance._spawned_instances = []  # Make unique
-        if not instance.INITIAL_SPAWN:
-            instance._time_until_spawn = instance.SPAWN_INTERVAL
+        if not instance._INITIAL_SPAWN:
+            instance._time_until_spawn = instance._SPAWN_INTERVAL
         return instance
 
     # NOTE: Might be slow
@@ -62,22 +62,22 @@ class Spawner[T: Sprite](Sprite):
         # NOTE: This implementation is worse in performance,
         #       as it does a lot of lookups *each* frame.
         #       However, it is better gamewise, as the spawn cooldown is not synced
-        if self.check_active_spawns_count() < self.MAX_ACTIVE_SPAWNS:
+        if self.check_active_spawns_count() < self._MAX_ACTIVE_SPAWNS:
             if self._time_until_spawn <= 0:
-                self._time_until_spawn = self.SPAWN_INTERVAL
+                self._time_until_spawn = self._SPAWN_INTERVAL
                 self.spawn()
         else:
-            self._time_until_spawn = self.SPAWN_INTERVAL
+            self._time_until_spawn = self._SPAWN_INTERVAL
 
     def spawn(self) -> None:
         kinds = self._get_spawn_types()
 
-        match self.SPAWN_MODE:
+        match self._SPAWN_MODE:
             case SpawnMode.RANDOM:
                 kind = random.choice(kinds)
                 # instance = kind()
                 instance = kind().with_global_position(
-                    self.global_position + self.SPAWN_OFFSET
+                    self.global_position + self._SPAWN_OFFSET
                 )
                 self.init_spawned(instance)
                 self._spawned_instances.append(instance)
@@ -85,7 +85,7 @@ class Spawner[T: Sprite](Sprite):
             case SpawnMode.ALL:
                 for kind in kinds:
                     instance = kind().with_global_position(
-                        self.global_position + self.SPAWN_OFFSET
+                        self.global_position + self._SPAWN_OFFSET
                     )
                     self.init_spawned(instance)
                     self._spawned_instances.append(instance)
@@ -93,18 +93,18 @@ class Spawner[T: Sprite](Sprite):
             case SpawnMode.ALL_UNTIL:
                 for kind in random.choices(kinds, k=len(kinds)):  # Shuffle random
                     instance = kind().with_global_position(
-                        self.global_position + self.SPAWN_OFFSET
+                        self.global_position + self._SPAWN_OFFSET
                     )
                     self.init_spawned(instance)
                     self._spawned_instances.append(instance)
-                    if len(self._spawned_instances) >= self.MAX_ACTIVE_SPAWNS:
+                    if len(self._spawned_instances) >= self._MAX_ACTIVE_SPAWNS:
                         break
 
             case SpawnMode.FILL:
-                while len(self._spawned_instances) < self.MAX_ACTIVE_SPAWNS:
+                while len(self._spawned_instances) < self._MAX_ACTIVE_SPAWNS:
                     kind = random.choice(kinds)
                     instance = kind().with_global_position(
-                        self.global_position + self.SPAWN_OFFSET
+                        self.global_position + self._SPAWN_OFFSET
                     )
                     self.init_spawned(instance)
                     self._spawned_instances.append(instance)
@@ -122,7 +122,7 @@ class Spawner[T: Sprite](Sprite):
 
 
 class KelpSpawner(Spawner[Kelp]):
-    SPAWN_OFFSET = Vec2(0, -6)
+    _SPAWN_OFFSET = Vec2(0, -6)
     position = Vec2(1, 1)
     color = colex.from_hex("#C2B280")
     centered = True
@@ -130,7 +130,7 @@ class KelpSpawner(Spawner[Kelp]):
 
 
 class OreSpawner(Spawner[ores.Gold | ores.Titanium | ores.Copper]):
-    SPAWN_OFFSET = Vec2(-1, 0)
+    _SPAWN_OFFSET = Vec2(-1, 0)
     position = Vec2.ZERO
     color = colex.GRAY
     texture = ["."]
@@ -140,25 +140,32 @@ class OreSpawner(Spawner[ores.Gold | ores.Titanium | ores.Copper]):
 class FishSpawner(
     Spawner[fish.SmallFish | fish.MediumFish | fish.LongFish | fish.WaterFish]
 ):
-    INITIAL_SPAWN = False
-    MAX_ACTIVE_SPAWNS = 2
-    SPAWN_MODE = SpawnMode.RANDOM
+    _INITIAL_SPAWN = False
+    _MAX_ACTIVE_SPAWNS = 2
+    _SPAWN_MODE = SpawnMode.RANDOM
     position = Vec2(0, 1)
     centered = True
     color = colex.CORAL
     texture = ["o."]
 
+    def init_spawned(
+        self,
+        instance: fish.SmallFish | fish.MediumFish | fish.LongFish | fish.WaterFish,
+    ) -> None:
+        while ocean.Floor.has_loose_point_inside(instance.global_position):
+            instance.position += Vec2.UP
+
 
 class BubbleSpawner(Spawner[Bubble]):
-    INITIAL_SPAWN = False
-    SPAWN_INTERVAL = 8
-    MAX_ACTIVE_SPAWNS = 2
+    _INITIAL_SPAWN = False
+    _SPAWN_INTERVAL = 8
+    _MAX_ACTIVE_SPAWNS = 2
     position = Vec2.ZERO
     centered = True
     visible = False
 
     def __init__(self) -> None:
-        self._time_until_spawn = random.randint(0, self.SPAWN_INTERVAL)
+        self._time_until_spawn = random.randint(0, self._SPAWN_INTERVAL)
 
     def init_spawned(self, instance: Bubble) -> None:
         instance.z_index -= 2  # Hide behind `OceanFloor`

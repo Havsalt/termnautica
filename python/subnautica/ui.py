@@ -4,7 +4,6 @@ from _collections_abc import dict_items, dict_keys, dict_values
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from math import ceil
-from typing import Self
 
 import colex
 from charz import Sprite, Label, Vec2, text

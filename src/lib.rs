@@ -46,7 +46,7 @@ fn render_all(
         let centered: bool = node.getattr("centered")?.extract()?;
         let node_transparency: Option<char> = node.getattr("transparency")?.extract()?;
         let color: Option<String> = node.getattr("color")?.extract()?;
-        
+
         // Relative to screen
         let relative_x = global_x - camera_x;
         let relative_y = global_y - camera_y;

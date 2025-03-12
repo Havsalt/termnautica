@@ -1,4 +1,7 @@
+import os
 import random
+
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 import keyboard
 from charz import Engine, Camera, Screen, AssetLoader, Vec2
@@ -8,7 +11,7 @@ AssetLoader.texture_root = "python/sprites"
 random.seed(3)
 
 from rust import RustScreen
-from .ocean import Ocean, OceanWater
+from . import ocean
 from .player import Player
 from .buildings import Lifepod
 
@@ -49,9 +52,10 @@ class App(Engine):
         # Attatch camera to player
         camera.parent = self.player
         # Attatch lifepod to waving water
+        ocean.generate_floor()
+        ocean.generate_water()
         self.lifepod = Lifepod()
-        self.ocean = Ocean()
-        middle_ocean_water = OceanWater().save_rest_location()
+        middle_ocean_water = ocean.Water().save_rest_location()
         self.lifepod.parent = middle_ocean_water
         # DEV
         # from .fish import WaterFish
@@ -65,10 +69,9 @@ class App(Engine):
         # Coral().with_global_position(x=20, y=-10)
 
     def update(self, _delta: float) -> None:
-        OceanWater.advance_wave_time()
+        ocean.Water.advance_wave_time()
 
 
-def main() -> int:
+def main() -> int | None:
     app = App()
     app.run()
-    return 0

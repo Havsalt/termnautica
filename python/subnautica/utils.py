@@ -1,6 +1,10 @@
 import random
 from collections.abc import Iterable, Generator
 from collections import deque
+from typing import Callable
+
+
+type FloatToInt = Callable[[float], int]
 
 
 def groupwise[T](iterable: Iterable[T], /, n: int) -> Generator[tuple[T, ...]]:

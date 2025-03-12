@@ -1,6 +1,5 @@
 import random
 from math import pi as PI
-from types import ModuleType
 from typing import TYPE_CHECKING
 
 import colex
@@ -9,17 +8,18 @@ from charz import Sprite, AnimatedSprite, AnimationSet, Animation, Vec2, text
 
 from .utils import randf
 
+# Type checking for lazy loading
 if TYPE_CHECKING:
-    from .ocean import OceanWater
+    from .ocean import Water
 else:
-    OceanWater = None
+    Water = None
 
 
 def _ensure_ocean_water() -> None:
     # Lazy loading - A quick workaround
-    global OceanWater
-    if OceanWater is None:
-        from .ocean import OceanWater
+    global Water
+    if Water is None:
+        from .ocean import Water
 
 
 class Bubble(AnimatedSprite):
@@ -47,7 +47,7 @@ class Bubble(AnimatedSprite):
     def is_submerged(self) -> bool:
         _ensure_ocean_water()
         self_height = self.global_position.y - self.texture_size.y / 2
-        wave_height = OceanWater.wave_height_at(self.global_position.x)
+        wave_height = Water.wave_height_at(self.global_position.x)
         return self_height - wave_height > 0
 
     def update(self, _delta: float) -> None:

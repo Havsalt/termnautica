@@ -12,6 +12,7 @@ from .utils import groupwise, randf
 type Coordinate = tuple[int, int]
 
 
+WIDTH: int = 500
 # TODO: Add spawning requirements, like min and max height
 # NOTE: Order will be randomized for each attempt
 # Percent in int | Min 1, Max 100
@@ -23,13 +24,34 @@ SPAWN_CHANCES: dict[type[spawners.Spawner], int] = {
 }
 
 
-class OceanFloor(Sprite):
+class Floor(Sprite):
+    REST_DEPTH: int = 15
+    ROCK_START_HEIGHT: int = -10
     z_index = -1
     color = colex.from_hex("#C2B280")
     texture = ["_"]
+    # TODO: Might be faster to have `points` be of type `dict[int, int]`,
+    #       where the key is X-position, and value is Y-position.
+    #       This way, an instant lookup can be done on X-position,
+    #       which is the first required information part
+    points: ClassVar[set[Coordinate]] = set()
+
+    @classmethod
+    def has_point_inside(cls, point: Coordinate) -> bool:
+        # With "Inside", I mean under any tile in Y-axis (including tile location itself)
+        for floor in cls.points:
+            if floor[0] == point[0] and floor[1] <= point[1]:
+                return True
+        return False
+
+    @classmethod
+    def has_loose_point_inside(cls, point: Vec2) -> bool:
+        snapped = tuple(map(int, point))
+        assert len(snapped) == 2
+        return cls.has_point_inside(snapped)
 
 
-class OceanWater(Sprite):
+class Water(Sprite):
     _REST_LEVEL: float = 0  # Where the ocean rests, in world space
     _WAVE_AMPLITUDE: float = 2
     _WAVE_INTERVAL: float = 3 * 16  # frames
@@ -74,63 +96,60 @@ class OceanWater(Sprite):
         )
 
 
-class Ocean(dict[Coordinate, OceanWater | OceanFloor]):
-    _WIDTH: int = 500
-
-    def __init__(self) -> None:
-        self.generate_ocean_floor()
-        self.generate_ocean_water()
-
-    def generate_ocean_water(self) -> None:
-        for x in range(self._WIDTH):
-            (
-                OceanWater()
-                .with_position(
-                    x=x - self._WIDTH // 2,
-                    y=random.randint(0, 1),
-                )
-                .save_rest_location()
+def generate_water() -> None:
+    for x in range(WIDTH):
+        (
+            Water()
+            .with_position(
+                x=x - WIDTH // 2,
+                y=random.randint(0, 1),
             )
+            .save_rest_location()
+        )
 
-    def generate_ocean_floor(self):
-        height = 0
-        points: list[Vec2i] = []
-        for x_position in range(self._WIDTH):
-            height += randf(-1, 1)
-            point = Vec2i(
-                x_position - self._WIDTH // 2,
-                int(height) + 15,
-            )
-            points.append(point)
-        # FIXME: Implement properly - Almost working
-        for prev, curr, peak in groupwise(points, n=3):
-            is_climbing = peak.y - curr.y < 0
-            is_flatting = abs(peak.y - curr.y) < 0.8
-            was_dropping = curr.y - prev.y > 0
-            if is_flatting:
-                ocean_floor = OceanFloor(position=curr)
-            elif is_climbing and was_dropping:
-                ocean_floor = OceanFloor(position=curr, texture=["V"])
-            elif not is_climbing and not was_dropping:
-                ocean_floor = OceanFloor(position=curr, texture=["A"])
-            elif is_climbing:
-                ocean_floor = OceanFloor(position=curr, texture=["/"])
-            elif not is_climbing:
-                ocean_floor = OceanFloor(position=curr, texture=["\\"])
-            else:
-                ocean_floor = OceanFloor(position=curr)
-            # Make rock color if high up
-            if curr.y < 10:
-                ocean_floor.color = colex.GRAY
-            # Store ref - For faster collision
-            self[curr.to_tuple()] = ocean_floor
-            self.attempt_generate_spawner_at(curr)
 
-    def attempt_generate_spawner_at(self, location: Vec2) -> None:
-        all_spawners = list(SPAWN_CHANCES.keys())
-        random.shuffle(all_spawners)
-        for spawner in all_spawners:
-            chance = SPAWN_CHANCES[spawner]
-            if random.randint(1, 100) <= chance:
-                spawner().with_global_position(location + spawner.position)
-                break
+def attempt_generate_spawner_at(location: Vec2) -> None:
+    all_spawners = list(SPAWN_CHANCES.keys())
+    random.shuffle(all_spawners)
+    for spawner in all_spawners:
+        chance = SPAWN_CHANCES[spawner]
+        if random.randint(1, 100) <= chance:
+            spawner().with_global_position(location + spawner.position)
+            break
+
+
+def generate_floor():
+    depth = 0
+    vec_points: list[Vec2] = []
+    for x_position in range(-WIDTH // 2, WIDTH // 2):
+        depth += randf(-1, 1)
+        point = Vec2i(
+            x_position,
+            int(depth) + Floor.REST_DEPTH,
+        )
+        # Temp point - For deciding texture
+        vec_points.append(point)
+        # Store point over time - Used for collision
+        Floor.points.add(point.to_tuple())
+
+    # FIXME: Implement properly - Almost working
+    for prev, curr, peak in groupwise(vec_points, n=3):
+        is_climbing = peak.y - curr.y < 0
+        is_flatting = abs(peak.y - curr.y) < 0.8
+        was_dropping = curr.y - prev.y > 0
+        if is_flatting:
+            ocean_floor = Floor(position=curr)
+        elif is_climbing and was_dropping:
+            ocean_floor = Floor(position=curr, texture=["V"])
+        elif not is_climbing and not was_dropping:
+            ocean_floor = Floor(position=curr, texture=["A"])
+        elif is_climbing:
+            ocean_floor = Floor(position=curr, texture=["/"])
+        elif not is_climbing:
+            ocean_floor = Floor(position=curr, texture=["\\"])
+        else:
+            ocean_floor = Floor(position=curr)
+        # Make rock color if high up
+        if curr.y >= Floor.ROCK_START_HEIGHT:
+            ocean_floor.color = colex.GRAY
+        attempt_generate_spawner_at(curr)
