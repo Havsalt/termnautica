@@ -128,6 +128,10 @@ class KelpSpawner(Spawner[Kelp]):
     centered = True
     texture = [",|."]
 
+    def init_spawned(self, instance: Kelp) -> None:
+        if random.randint(0, 1):
+            instance.is_on_last_frame = True
+
 
 class OreSpawner(Spawner[ores.Gold | ores.Titanium | ores.Copper]):
     _SPAWN_OFFSET = Vec2(-1, 0)

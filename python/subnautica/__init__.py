@@ -59,14 +59,14 @@ class App(Engine):
         self.lifepod.parent = middle_ocean_water
         # DEV
         # from .fish import WaterFish
-        # from .spawners import Coral
+        # from .spawners import FishSpawner
 
         # for i in range(0, 5):
         #     f = WaterFish(position=Vec2(20, -10))
         #     f.position.x += i * 10
         #     f.position.y += random.randint(-2, 2)
         #     f.speed_y = -20
-        # Coral().with_global_position(x=20, y=-10)
+        # FishSpawner().with_global_position(x=20, y=-10)
 
     def update(self, _delta: float) -> None:
         ocean.Water.advance_wave_time()
