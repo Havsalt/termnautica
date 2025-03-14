@@ -1,5 +1,4 @@
 use pyo3::prelude::*;
-use rayon::prelude::*;
 
 const RESET: &str = "\x1b[0m";
 
