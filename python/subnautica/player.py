@@ -6,6 +6,7 @@ from charz import Camera, Sprite, Label, Vec2
 from . import ui, ocean
 from .props import Collectable, Interactable, Eatable, Building
 from .particles import Bubble, Blood
+from .utils import move_toward
 
 pygame.mixer.init()
 
@@ -14,12 +15,18 @@ type Action = str | int
 
 
 class Player(Sprite):
+    _GRAVITY: float = 0.91
+    _JUMP_STRENGTH: float = 4
+    _AIR_FRICTION: float = 0.7
+    _WATER_FRICTION: float = 0.3
+    _MAX_SPEED: Vec2 = Vec2(2, 2)
     _ACTIONS: tuple[Action, ...] = (  # Order is also precedence - First is highest
         "e",
         "1",
         "2",
+        "space",
     )
-    position = Vec2(17, -8)
+    position = Vec2(17, -18)
     z_index = 1
     color = colex.AQUA
     transparency = " "
@@ -29,6 +36,7 @@ class Player(Sprite):
         "/ | \\",
         " / \\",
     ]
+    _y_speed: float = 0
     _current_action: Action | None = None
     _key_just_pressed: bool = False
     _current_interactable: Sprite | None = None
@@ -140,33 +148,53 @@ class Player(Sprite):
             # Release
             self._current_action = None
 
+    def handle_movement_in_building(self, velocity: Vec2) -> None:
+        assert isinstance(self.parent, Building)
+        if self._current_action == "space" and self._key_just_pressed:
+            self._y_speed = -self._JUMP_STRENGTH
+        combined_velocity = Vec2(velocity.x, self._y_speed).clamped(
+            -self._MAX_SPEED,
+            self._MAX_SPEED,
+        )
+        self.parent.move_and_collide_inside(self, combined_velocity)
+        # Apply friction
+        self._y_speed = move_toward(self._y_speed, 0, self._AIR_FRICTION)
+
     def handle_movement(self) -> None:
-        # TODO: Add acceleration and speed for at least Y-axis
-        # Fall down while in air, except for when in building
-        if self.parent is None and not self.is_in_ocean():
-            self.position.y += 1
-            return
-        # Keyboard input
         velocity = Vec2(
             keyboard.is_pressed("d") - keyboard.is_pressed("a"),
             keyboard.is_pressed("s") - keyboard.is_pressed("w"),
         )
+        # Is in builindg movement
+        if isinstance(self.parent, Building):
+            self.handle_movement_in_building(velocity)
+            return
+        # Is in air movement
+        elif not self.is_in_ocean():
+            self._y_speed += self._GRAVITY
+        # Is in ocean movement
+        combined_velocity = Vec2(velocity.x, velocity.y + self._y_speed).clamped(
+            -self._MAX_SPEED,
+            self._MAX_SPEED,
+        )
         # NOTE: Order of x/y matter
-        self.position.y += velocity.y
+        self.position.y += combined_velocity.y
         # Revert motion if ended up colliding
         if self.is_colliding_with_ocean_floor():
-            self.position.y -= velocity.y
-        self.position.x += velocity.x
+            self.position.y -= combined_velocity.y
+            self._y_speed = 0  # Hit ocean floor
+        self.position.x += combined_velocity.x
         # Revert motion if ended up colliding
         if self.is_colliding_with_ocean_floor():
-            self.position.x -= velocity.x
+            self.position.x -= combined_velocity.x
+        # Apply friction
+        friction = self._WATER_FRICTION if self.is_submerged() else self._AIR_FRICTION
+        self._y_speed = move_toward(self._y_speed, 0, friction)
 
     def handle_oxygen(self) -> None:
         # Restore oxygen if inside a building with O2
-        if (
-            self.parent is not None
-            and isinstance(self.parent, Building)
-            and self.parent.has_oxygen
+        if (  # Is in building with oxygen
+            isinstance(self.parent, Building) and self.parent.HAS_OXYGEN
         ):
             self._oxygen_bar.fill()
             return
@@ -229,8 +257,9 @@ class Player(Sprite):
         if proximite_interactables:
             proximite_interactables.sort(key=lambda pair: pair[0])
             # Allow this because `Interactable` should always be used with `Sprite`
-            if self._current_interactable is not None:  # Reset color to class color
-                assert isinstance(self._current_interactable, Interactable)
+            if isinstance(
+                self._current_interactable, Interactable
+            ):  # Reset color to class color
                 self._current_interactable.loose_focus()
             # Reverse color of current interactable
             first = proximite_interactables[0][1]

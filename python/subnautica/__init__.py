@@ -70,6 +70,8 @@ class App(Engine):
 
     def update(self, _delta: float) -> None:
         ocean.Water.advance_wave_time()
+        if keyboard.is_pressed("esc"):
+            self.is_running = False
 
 
 def main() -> int | None:

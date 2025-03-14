@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import colex
-from charz import Sprite, Label, Vec2, load_texture, clamp
+from charz import Sprite, Label, Hitbox, Vec2, load_texture, clamp
 
 from .props import Interactable, Building
 
@@ -27,7 +27,8 @@ class Ladder(Interactable, Sprite):
 
 # TODO: Crafting | Fabricatror (Medkit), Radio, O2, Power (Solar), Storage
 class Lifepod(Interactable, Building, Sprite):
-    _FLOOR_LEVEL: int = 3
+    _BOUNDARY = Hitbox(size=Vec2(19, 9), centered=True)
+    _OPEN_CEILING = True
     name = "lifepod mk8"
     reach = 15
     reach_fraction = 3 / 7
@@ -68,19 +69,6 @@ class Lifepod(Interactable, Building, Sprite):
     def update(self, _delta: float) -> None:
         if not self.interactable:
             self.z_index = 0
-        # Collision inside
-        if self._curr_interactor is not None:
-            # Gravity inside
-            self._curr_interactor.position.y = min(
-                self._FLOOR_LEVEL,
-                self._curr_interactor.position.y + 1,
-            )
-            # Wall collision
-            self._curr_interactor.position.x = clamp(
-                self._curr_interactor.position.x,
-                self.texture_size.x // -2 + 4,
-                self.texture_size.x // 2 - 3,
-            )
 
     def on_exit(self) -> None:
         assert (
