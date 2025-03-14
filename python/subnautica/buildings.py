@@ -39,7 +39,9 @@ class Lifepod(Interactable, Building, Sprite):
     texture = load_texture("lifepod/front.txt")
     entry_location = Vec2(0, -8)
     exit_location = Vec2(0, -7)
-    _curr_interactor: Player | None = None
+    _curr_interactor: Player | None = (
+        None  # Used to track `Player`, for teleporting to exit location
+    )
 
     def __init__(self) -> None:
         self._name = Label(
