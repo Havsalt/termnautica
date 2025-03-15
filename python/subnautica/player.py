@@ -53,19 +53,22 @@ class Player(Sprite):
         self._thirst_bar = ui.ThirstBar().with_parent(Camera.current)
         self._hotbar1 = Label(
             self,
-            text="Interact [E",
+            text="Interact [E".rjust(11),
+            transparency=" ",
             color=colex.SALMON,
             position=Vec2(40, -5),
         )
         self._hotbar2 = Label(
             self,
-            text="     Eat [1",
+            text="Eat [1".rjust(11),
+            transparency=" ",
             color=colex.SANDY_BROWN,
             position=Vec2(40, -3),
         )
         self._hotbar3 = Label(
             self,
-            text="   Drink [2",
+            text="Drink [2".rjust(11),
+            transparency=" ",
             color=colex.AQUA,
             position=Vec2(40, -2),
         )

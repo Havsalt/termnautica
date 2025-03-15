@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, assert_never
 
 import pygame
 import colex
+from colex import ColorValue
 from charz import Sprite, Vec2, text, clamp
 
 from .props import Collectable, Interactable, Eatable
@@ -14,6 +15,11 @@ if TYPE_CHECKING:
     from . import ocean
 else:
     ocean = None
+
+
+# Expand text flipping db
+text._h_conversions["»"] = "«"
+text._h_conversions["«"] = "»"
 
 
 def _ensure_ocean() -> None:
@@ -151,3 +157,20 @@ class WaterFish(BaseFish):
     NAME = "bladder fish"
     color = colex.PINK
     texture = ["<?))>("]
+
+
+class SwordFish(FishAI, Sprite):
+    _STEALTH_COLOR: ColorValue = colex.from_hex("#2B2B2B")
+    # color = colex.from_hex("#adcdc0")
+    color = colex.from_hex("#ffd966")
+    # texture = ["«««Ó(((()><"]
+    # texture = ["«««°(((()><"]
+    texture = ["«««Ó((ΞΞΞΞx<"]
+
+    def update(self, _delta: float) -> None:
+        super().update(_delta)
+        if random.randint(1, 100) < 3:
+            if self.color == self.__class__.color:
+                self.color = self._STEALTH_COLOR
+            else:
+                self.color = self.__class__.color

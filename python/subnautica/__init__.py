@@ -37,7 +37,8 @@ class DevCamera(Camera):
 
 # TODO: O2 1/2
 # TODO: LIFEPOD 1/3
-# TODO: CRAFTING - WATER 0/4
+# TODO: CRAFTING - WATER 1/4
+# TODO: Fix Sound not triggering the first time
 
 
 class App(Engine):
@@ -65,7 +66,30 @@ class App(Engine):
         pygame.mixer_music.set_volume(0.50)
         pygame.mixer_music.play(-1)  # Infinite loop
         # pygame.mixer.set_num_channels(64)
-        # DEV
+        # Dev stuff stashed away in this method
+        self.dev()
+
+    def dev(self) -> None:
+        from .fish import SwordFish
+        from .birds import SmallBird, MediumBird, LargeBird
+
+        SwordFish(position=Vec2(20, -18))
+
+        for i in range(-10, 10):
+            if random.randint(1, 3) == 1:
+                continue
+            if random.randint(1, 8) == 1:
+                LargeBird().with_global_position(
+                    x=random.randint(0, 5) + i * 15 - 50,
+                    y=random.randint(0, 10) - 20,
+                )
+                continue
+            bird = random.choice([SmallBird, MediumBird])
+            bird().with_global_position(
+                x=random.randint(0, 5) + i * 15 - 50,
+                y=random.randint(0, 10) - 20,
+            )
+
         # from .fish import WaterFish
         # from .spawners import FishSpawner
 
