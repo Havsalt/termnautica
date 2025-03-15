@@ -170,6 +170,8 @@ class SwordFish(FishAI, Sprite):
 
     def update(self, _delta: float) -> None:
         super().update(0)
+        if not self.is_submerged():
+            return
         for node in Sprite.texture_instances.values():
             if isinstance(node, Player):
                 dist = self.global_position.distance_to(node.global_position)
