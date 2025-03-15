@@ -42,8 +42,8 @@ class Spawner[T: Sprite](Sprite):
     def check_active_spawns_count(self) -> int:
         # NOTE: SIDE EFFECT: Remove from `_spawned_instances` if instance not alive
         count = 0
-        for instance in self._spawned_instances:
-            if instance.uid in Sprite.texture_instances:
+        for instance in self._spawned_instances:  # O(n) loop
+            if instance.uid in Sprite.texture_instances:  # O(1) lookup
                 count += 1
             else:
                 self._spawned_instances.remove(instance)
