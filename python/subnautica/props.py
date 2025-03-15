@@ -5,10 +5,13 @@ Classes defined here will be used as `mixin components`.
 They may also provide methods, either to be overwritten, or as base case.
 """
 
+import pygame
 import colex
-from charz import Texture, Color, Sprite, Hitbox, Vec2, clamp
+from charz import Sprite, Hitbox, Vec2, clamp
 
-# NOTE: Add manually when a new tag is created
+from .item import Item
+
+# NOTE: Add manually when a new tag/mixin is created
 __all__ = [
     "Collectable",
     "Interactable",
@@ -18,37 +21,62 @@ __all__ = [
 
 
 class Collectable:
-    name: str | None = None
+    NAME: str | None = None
+    _SOUND_COLLECT: pygame.mixer.Sound | None = pygame.mixer.Sound(
+        "assets/sounds/collect/default.wav"
+    )
 
     def get_tags(self) -> list[type]:
-        tags = []
-        for base in self.__class__.__mro__:
-            if base.__name__ in __all__:
-                tags.append(base)
-        return tags
+        return [base for base in self.__class__.__mro__ if base.__name__ in __all__]
+
+    def collect_into(self, inventory: dict[str, Item]) -> None:
+        assert self.NAME is not None, f"{self}.name is `None`"
+
+        if self.NAME in inventory:
+            inventory[self.NAME].count += 1
+            if self._SOUND_COLLECT is not None:
+                self._SOUND_COLLECT.play()
+
+        else:  # Insert new item with count of 1
+            inventory[self.NAME] = Item(
+                self.NAME,
+                1,
+                self.get_tags(),
+            )
 
 
-# TODO: Add center of grab reach thingy
 class Interactable:
-    reach: float = 8  # Maximum length the interactor can be from the `Interactable`
-    reach_fraction: float = 2 / 3  # Y-axis fraction, in linear transformation
-    interactable: bool = True  # Turn off when in use
-    highlight_z_index: int | None = None
+    _REACH: float = 8  # Maximum length the interactor can be from the `Interactable`
+    _REACH_FRACTION: float = 2 / 3  # Y-axis fraction, in linear transformation
+    _REACH_CENTER: Vec2 = Vec2.ZERO  # Offset
+    _HIGHLIGHT_Z_INDEX: int | None = None
+    _interactable: bool = True  # Turn off when in use
     _last_z_index: int | None = None
 
     def grab_focus(self) -> None:
-        assert isinstance(self, Texture) and isinstance(self, Color)
+        assert isinstance(self, Sprite)
         self.color = colex.REVERSE + (self.__class__.color or colex.WHITE)
-        if self.highlight_z_index is not None and self._last_z_index is None:
+        if self._HIGHLIGHT_Z_INDEX is not None and self._last_z_index is None:
             self._last_z_index = self.z_index
-            self.z_index = self.highlight_z_index
+            self.z_index = self._HIGHLIGHT_Z_INDEX
 
     def loose_focus(self) -> None:
-        assert isinstance(self, Texture) and isinstance(self, Color)
+        assert isinstance(self, Sprite)
         self.color = self.__class__.color
-        if self.highlight_z_index is not None and self._last_z_index is not None:
+        if self._HIGHLIGHT_Z_INDEX is not None and self._last_z_index is not None:
             self.z_index = self._last_z_index
             self._last_z_index = None
+
+    def is_in_range_of(self, global_point: Vec2) -> tuple[bool, float]:
+        assert isinstance(self, Sprite)
+        if not self._interactable:
+            return (False, 0)
+        reach_point = self.global_position + self._REACH_CENTER
+        relative = global_point - reach_point
+        relative.y /= self._REACH_FRACTION  # Apply linear transformation on Y-axis
+        # NOTE: Using squared lengths for a bit more performance
+        dist_squared = relative.length_squared()
+        return (dist_squared <= self._REACH * self._REACH, dist_squared)
 
     def on_interact(self, interactor: Sprite) -> None: ...
 

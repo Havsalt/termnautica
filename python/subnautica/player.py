@@ -8,8 +8,6 @@ from .props import Collectable, Interactable, Eatable, Building
 from .particles import Bubble, Blood
 from .utils import move_toward
 
-pygame.mixer.init()
-
 
 type Action = str | int
 
@@ -20,6 +18,11 @@ class Player(Sprite):
     _AIR_FRICTION: float = 0.7
     _WATER_FRICTION: float = 0.3
     _MAX_SPEED: Vec2 = Vec2(2, 2)
+    _HURT_SOUND = pygame.mixer.Sound("assets/sounds/hurt.wav")
+    _HURT_CHANNEL = pygame.mixer.Channel(0)
+    _DROWN_SOUND = pygame.mixer.Sound("assets/sounds/bubble.wav")
+    # DEV
+    # _DROWN_SOUND.set_volume(0)
     _ACTIONS: tuple[Action, ...] = (  # Order is also precedence - First is highest
         "e",
         "1",
@@ -40,9 +43,6 @@ class Player(Sprite):
     _current_action: Action | None = None
     _key_just_pressed: bool = False
     _current_interactable: Sprite | None = None
-    _drown_sound = pygame.mixer.Sound("python/sounds/bubble.wav")
-    # DEV
-    # _drown_sound.set_volume(0)
 
     def __init__(self) -> None:
         # NOTE: Current `Camera` has to be initialized before `Player.__init__` is called
@@ -204,14 +204,16 @@ class Player(Sprite):
             return
         # Decrease health if no oxygen, and spawn particles each tick
         if self._oxygen_bar.value == 0:
-            self._health_bar.value = self._health_bar.value - 1
+            self._health_bar.value -= 1
+            if not self._HURT_CHANNEL.get_busy():
+                self._HURT_CHANNEL.play(self._HURT_SOUND)
             Blood().with_global_position(
                 x=self.global_position.x - 1,
                 y=self.global_position.y - 1,
             )
             return
         # Decrease oxygen
-        self._oxygen_bar.value = self._oxygen_bar.value - 1
+        self._oxygen_bar.value -= 1
         raw_count = self._oxygen_bar.MAX_VALUE / self._oxygen_bar.MAX_CELL_COUNT
         # NOTE: Might be fragile logic, but works at least when
         #       MAX_VALUE = 300 and MAX_CELL_COUNT = 10
@@ -220,21 +222,21 @@ class Player(Sprite):
                 x=self.global_position.x,
                 y=self.global_position.y - 1,
             )
-            self._drown_sound.play()
+            self._DROWN_SOUND.play()
 
     def handle_hunger(self) -> None:
-        self._hunger_bar.value = self._hunger_bar.value - 1
+        self._hunger_bar.value -= 1
         if self._hunger_bar.value == 0:
-            self._health_bar.value = self._health_bar.value - 1
+            self._health_bar.value -= 1
             Blood().with_global_position(
                 x=self.global_position.x - 1,
                 y=self.global_position.y - 1,
             )
 
     def handle_thirst(self) -> None:
-        self._thirst_bar.value = self._thirst_bar.value - 1
+        self._thirst_bar.value -= 1
         if self._thirst_bar.value == 0:
-            self._health_bar.value = self._health_bar.value - 1
+            self._health_bar.value -= 1
             Blood().with_global_position(
                 x=self.global_position.x - 1,
                 y=self.global_position.y - 1,
@@ -242,16 +244,15 @@ class Player(Sprite):
 
     def handle_interact_selection(self) -> None:
         proximite_interactables: list[tuple[float, Interactable]] = []
-        self_global_position = self.global_position
-
+        global_point = self.global_position  # Store property value outside loop
         for node in Sprite.texture_instances.values():
-            if isinstance(node, Interactable) and node.interactable:
-                diff = node.global_position - self_global_position
-                diff.y /= node.reach_fraction  # Apply linear transformation on Y-axis
-                # NOTE: Using squared lengths for a bit more performance
-                dist = diff.length_squared()
-                if dist < node.reach * node.reach:
-                    proximite_interactables.append((dist, node))
+            if (
+                isinstance(node, Interactable)
+                and node._interactable
+                and (condition_and_dist := node.is_in_range_of(global_point))[0]
+            ):  # I know this syntax might be a bit too much,
+                # but know that it made it easier to split logic into mixin class
+                proximite_interactables.append((condition_and_dist[1], node))
 
         # Highlight closest interactable
         if proximite_interactables:
@@ -291,18 +292,7 @@ class Player(Sprite):
         # Collect collectable that is selected
         # `self._curr_interactable` is already in reach
         if self._current_action == "e" and self._key_just_pressed:
-            assert (
-                self._current_interactable.name is not None
-            ), f"{self._current_interactable}.name is `None`"
-            item_name = self._current_interactable.name
-            if item_name in self._inventory:
-                self._inventory[item_name].count += 1
-            else:  # Insert new item with count of 1
-                self._inventory[item_name] = ui.Item(
-                    item_name,
-                    1,
-                    self._current_interactable.get_tags(),
-                )
+            self._current_interactable.collect_into(self._inventory.inner)
             self._current_interactable.queue_free()
             self._current_interactable = None
 

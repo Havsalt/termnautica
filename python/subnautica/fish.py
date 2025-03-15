@@ -2,6 +2,7 @@ import random
 from enum import ReprEnum, Enum, auto
 from typing import TYPE_CHECKING, assert_never
 
+import pygame
 import colex
 from charz import Sprite, Vec2, text, clamp
 
@@ -124,28 +125,29 @@ class FishAI:
 
 
 class BaseFish(FishAI, Eatable, Interactable, Collectable, Sprite):
+    _SOUND_COLLECT = pygame.mixer.Sound("assets/sounds/collect/fish.wav")
     centered = True
 
 
 class SmallFish(BaseFish):
-    name = "gold_fish"
+    NAME = "gold_fish"
     color = colex.DARK_SALMON
     texture = ["<><"]
 
 
 class MediumFish(BaseFish):
-    name = "cod"
+    NAME = "cod"
     color = colex.from_hex("#659285")
     texture = ["<[Xx"]
 
 
 class LongFish(BaseFish):
-    name = "salmon"
+    NAME = "salmon"
     color = colex.SALMON
     texture = ["<º)))))}><"]
 
 
 class WaterFish(BaseFish):
-    name = "bladder fish"
+    NAME = "bladder fish"
     color = colex.PINK
     texture = ["<?))>("]

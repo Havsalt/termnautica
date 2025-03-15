@@ -12,8 +12,8 @@ if TYPE_CHECKING:
 
 
 class Ladder(Interactable, Sprite):
-    reach = 2
-    reach_fraction = 2 / 1
+    _REACH = 2
+    _REACH_FRACTION = 2 / 1
     z_index = 1
     color = colex.from_hex("#aaa9ad")
     transparency = " "
@@ -29,11 +29,10 @@ class Ladder(Interactable, Sprite):
 class Lifepod(Interactable, Building, Sprite):
     _BOUNDARY = Hitbox(size=Vec2(19, 9), centered=True)
     _OPEN_CEILING = True
-    name = "lifepod mk8"
-    reach = 15
-    reach_fraction = 3 / 7
+    _REACH = 15
+    _REACH_FRACTION = 3 / 7
+    _HIGHLIGHT_Z_INDEX = 0
     z_index = -2  # Increase when stepping into
-    highlight_z_index = 0
     color = colex.BOLD + colex.WHITE
     centered = True
     texture = load_texture("lifepod/front.txt")
@@ -60,7 +59,7 @@ class Lifepod(Interactable, Building, Sprite):
         # DEV
         interactor.global_position = self.global_position + self.entry_location
         # Change state and texture
-        self.interactable = False
+        self._interactable = False
         # self.z_index = 2
         self.texture = load_texture("lifepod/inside.txt")
         self._curr_interactor = interactor
@@ -68,7 +67,7 @@ class Lifepod(Interactable, Building, Sprite):
 
     # TODO: Improve
     def update(self, _delta: float) -> None:
-        if not self.interactable:
+        if not self._interactable:
             self.z_index = 0
 
     def on_exit(self) -> None:
@@ -86,7 +85,7 @@ class Lifepod(Interactable, Building, Sprite):
         )
         # Unset player
         self._curr_interactor = None
-        self.interactable = True
+        self._interactable = True
         # Transition to outside perspective
         self.z_index = self.__class__.z_index
         self.texture = load_texture("lifepod/front.txt")

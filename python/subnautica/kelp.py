@@ -1,3 +1,4 @@
+import pygame
 import colex
 from charz import AnimatedSprite, AnimationSet, Animation, Sprite, Vec2
 
@@ -5,7 +6,7 @@ from .props import Collectable, Interactable
 
 
 class Kelp(Interactable, Collectable, AnimatedSprite):
-    name = "kelp"
+    NAME = "kelp"
     color = colex.SEA_GREEN
     animations = AnimationSet(
         Sway=Animation("kelp"),

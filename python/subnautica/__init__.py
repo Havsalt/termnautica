@@ -3,12 +3,15 @@ import random
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
+import pygame
 import keyboard
 from charz import Engine, Camera, Screen, AssetLoader, Vec2
 
-AssetLoader.animation_root = "python/animations"
-AssetLoader.texture_root = "python/sprites"
-random.seed(3)
+AssetLoader.animation_root = "assets/animations"
+AssetLoader.texture_root = "assets/sprites"
+random.seed(3)  # DEV
+
+pygame.mixer.init()
 
 from rust import RustScreen
 from . import ocean
@@ -57,6 +60,11 @@ class App(Engine):
         self.lifepod = Lifepod()
         middle_ocean_water = ocean.Water().save_rest_location()
         self.lifepod.parent = middle_ocean_water
+        # Music
+        pygame.mixer_music.load("assets/music/main.mp3")
+        pygame.mixer_music.set_volume(0.50)
+        pygame.mixer_music.play(-1)  # Infinite loop
+        # pygame.mixer.set_num_channels(64)
         # DEV
         # from .fish import WaterFish
         # from .spawners import FishSpawner
@@ -72,6 +80,7 @@ class App(Engine):
         ocean.Water.advance_wave_time()
         if keyboard.is_pressed("esc"):
             self.is_running = False
+            pygame.quit()
 
 
 def main() -> int | None:
