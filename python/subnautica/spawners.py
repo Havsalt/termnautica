@@ -114,7 +114,7 @@ class Spawner[T: Sprite](Sprite):
 
     def init_spawned(self, instance: T) -> None: ...
 
-    def _get_spawn_types(self) -> tuple[type, ...]:
+    def _get_spawn_types(self) -> tuple[type[T], ...]:
         kind = get_original_bases(self.__class__)[0].__args__[0]
         if get_origin(kind) is UnionType:
             return get_args(kind)
