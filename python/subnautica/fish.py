@@ -5,9 +5,10 @@ from typing import TYPE_CHECKING, assert_never
 import pygame
 import colex
 from colex import ColorValue
-from charz import Sprite, Vec2, text, clamp
+from charz import Sprite, Vec2, text, clamp, sign
 
 from .props import Collectable, Interactable, Eatable
+from .player import Player
 from .utils import move_toward
 
 # Type checking for lazy loading
@@ -168,9 +169,21 @@ class SwordFish(FishAI, Sprite):
     texture = ["«««Ó((ΞΞΞΞx<"]
 
     def update(self, _delta: float) -> None:
-        super().update(_delta)
-        if random.randint(1, 100) < 3:
-            if self.color == self.__class__.color:
-                self.color = self._STEALTH_COLOR
-            else:
-                self.color = self.__class__.color
+        super().update(0)
+        for node in Sprite.texture_instances.values():
+            if isinstance(node, Player):
+                dist = self.global_position.distance_to(node.global_position)
+                if dist < 20:
+                    direction = self.global_position.direction_to(node.global_position)
+                    self.position += direction * 0.5
+                    if sign(direction.x) == 1:
+                        self.texture = text.flip_lines_h(self.__class__.texture)
+                    else:
+                        self.texture = self.__class__.texture
+                    self.color = self._STEALTH_COLOR
+                if dist < 4:
+                    node._health_bar.value -= 1
+                    self.color = self.__class__.color
+                if dist >= 20:
+                    self.color = self.__class__.color
+                break
