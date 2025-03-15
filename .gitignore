@@ -1,9 +1,6 @@
 dev.py
 speach.txt
 
-.gitignore
-assets/music/main.mp3
-
 # rust generated files
 target/
 
