@@ -39,7 +39,6 @@ class Spawner[T: Sprite](Sprite):
             instance._time_until_spawn = instance._SPAWN_INTERVAL
         return instance
 
-    # NOTE: Might be slow
     def check_active_spawns_count(self) -> int:
         # NOTE: SIDE EFFECT: Remove from `_spawned_instances` if instance not alive
         count = 0
@@ -52,16 +51,6 @@ class Spawner[T: Sprite](Sprite):
 
     def update(self, _delta: float) -> None:
         self._time_until_spawn -= 1
-        # NOTE: Keep commented code in case of bad performance
-        # if self._time_until_spawn <= 0:
-        #     if self.check_active_spawns_count() < self.MAX_ACTIVE_SPAWNS:
-        #         self._time_until_spawn = self.SPAWN_INTERVAL
-        #         self.spawn()
-        #     else:
-        #         self._time_until_spawn = self.SPAWN_INTERVAL
-        # NOTE: This implementation is worse in performance,
-        #       as it does a lot of lookups *each* frame.
-        #       However, it is better gamewise, as the spawn cooldown is not synced
         if self.check_active_spawns_count() < self._MAX_ACTIVE_SPAWNS:
             if self._time_until_spawn <= 0:
                 self._time_until_spawn = self._SPAWN_INTERVAL
