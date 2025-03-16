@@ -9,7 +9,8 @@ import pygame
 import colex
 from charz import Sprite, Hitbox, Vec2, clamp
 
-from .item import Item
+from .item import Item, ItemID
+from .recipe import Recipe
 
 # NOTE: Add manually when a new tag/mixin is created
 __all__ = [
@@ -17,11 +18,12 @@ __all__ = [
     "Interactable",
     "Eatable",
     "Building",
+    "Crafter",
 ]
 
 
 class Collectable:
-    NAME: str | None = None
+    ID: ItemID | None = None
     _SOUND_COLLECT: pygame.mixer.Sound | None = pygame.mixer.Sound(
         "assets/sounds/collect/default.wav"
     )
@@ -29,20 +31,20 @@ class Collectable:
     def get_tags(self) -> list[type]:
         return [base for base in self.__class__.__mro__ if base.__name__ in __all__]
 
-    def collect_into(self, inventory: dict[str, Item]) -> None:
-        assert self.NAME is not None, f"{self}.name is `None`"
+    def collect_into(self, inventory: dict[ItemID, Item]) -> None:
+        assert self.ID is not None, f"{self}.name is `None`"
 
-        if self.NAME in inventory:
-            inventory[self.NAME].count += 1
-            if self._SOUND_COLLECT is not None:
-                self._SOUND_COLLECT.play()
-
+        if self.ID in inventory:
+            inventory[self.ID].count += 1
         else:  # Insert new item with count of 1
-            inventory[self.NAME] = Item(
-                self.NAME,
+            inventory[self.ID] = Item(
+                self.ID,
                 1,
                 self.get_tags(),
             )
+
+        if self._SOUND_COLLECT is not None:
+            self._SOUND_COLLECT.play()
 
 
 class Interactable:
@@ -50,7 +52,7 @@ class Interactable:
     _REACH_FRACTION: float = 2 / 3  # Y-axis fraction, in linear transformation
     _REACH_CENTER: Vec2 = Vec2.ZERO  # Offset
     _HIGHLIGHT_Z_INDEX: int | None = None
-    _interactable: bool = True  # Turn off when in use
+    interactable: bool = True  # Turn off when in use
     _last_z_index: int | None = None
 
     def grab_focus(self) -> None:
@@ -69,7 +71,7 @@ class Interactable:
 
     def is_in_range_of(self, global_point: Vec2) -> tuple[bool, float]:
         assert isinstance(self, Sprite)
-        if not self._interactable:
+        if not self.interactable:
             return (False, 0)
         reach_point = self.global_position + self._REACH_CENTER
         relative = global_point - reach_point
@@ -81,12 +83,9 @@ class Interactable:
     def on_interact(self, interactor: Sprite) -> None: ...
 
 
-# TODO: Make it `Consumable` instead, and have hunger, thirst and such be stat vars
 class Eatable: ...
 
 
-# TODO: Define building room bounding hitbox, that can be checked from `Player`
-# TODO: Move building gravity of `Lifepod` into `Player`
 class Building:
     HAS_OXYGEN: bool = True
     _BOUNDARY: Hitbox | None = None
@@ -115,3 +114,7 @@ class Building:
         else:
             node.position.y = clamp(node.position.y + velocity.y, start.y, end.y)
         node.position.x = clamp(node.position.x + velocity.x, start.x, end.x)
+
+
+class Crafter:
+    _RECIPES: list[Recipe] = []  # NOTE: Order matter

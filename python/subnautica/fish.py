@@ -9,6 +9,7 @@ from charz import Sprite, Vec2, text, clamp, sign
 
 from .props import Collectable, Interactable, Eatable
 from .player import Player
+from .item import ItemID
 from .utils import move_toward
 
 # Type checking for lazy loading
@@ -58,7 +59,7 @@ class FishAI:
     _state: FishState = FishState.IDLE
     _direction: Direction = Direction.LEFT  # Sprites are drawn facing left
     _action_time_remaining: int = 0
-    assert _ACCELERATION > _FRICTION, "invalid constant values"
+    assert _ACCELERATION > _FRICTION, "Invalid constants"
 
     def update(self, _delta: float) -> None:
         assert isinstance(self, Sprite), f"`Sprite` base missing for {self}"
@@ -137,25 +138,25 @@ class BaseFish(FishAI, Eatable, Interactable, Collectable, Sprite):
 
 
 class SmallFish(BaseFish):
-    NAME = "gold_fish"
+    ID = ItemID.GOLD_FISH
     color = colex.DARK_SALMON
     texture = ["<><"]
 
 
 class MediumFish(BaseFish):
-    NAME = "cod"
+    ID = ItemID.COD
     color = colex.from_hex("#659285")
     texture = ["<[Xx"]
 
 
 class LongFish(BaseFish):
-    NAME = "salmon"
+    ID = ItemID.SALMON
     color = colex.SALMON
     texture = ["<º)))))}><"]
 
 
 class WaterFish(BaseFish):
-    NAME = "bladder fish"
+    ID = ItemID.BLADDER_FISH
     color = colex.PINK
     texture = ["<?))>("]
 
@@ -169,11 +170,15 @@ class SwordFish(FishAI, Sprite):
     texture = ["«««Ó((ΞΞΞΞx<"]
 
     def update(self, _delta: float) -> None:
+        # TODO: Refactor this quick solution
         super().update(0)
         if not self.is_submerged():
             return
         for node in Sprite.texture_instances.values():
             if isinstance(node, Player):
+                if node.is_in_building():
+                    self.color = self.__class__.color
+                    continue
                 dist = self.global_position.distance_to(node.global_position)
                 if dist < 20:
                     direction = self.global_position.direction_to(node.global_position)

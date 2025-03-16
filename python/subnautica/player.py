@@ -6,6 +6,7 @@ from charz import Camera, Sprite, Label, Vec2
 from . import ui, ocean
 from .props import Collectable, Interactable, Eatable, Building
 from .particles import Bubble, Blood
+from .item import ItemID
 from .utils import move_toward
 
 
@@ -21,6 +22,7 @@ class Player(Sprite):
     _HURT_SOUND = pygame.mixer.Sound("assets/sounds/hurt.wav")
     _HURT_CHANNEL = pygame.mixer.Channel(0)
     _DROWN_SOUND = pygame.mixer.Sound("assets/sounds/bubble.wav")
+    _BREATH_SOUND = pygame.mixer.Sound("assets/sounds/breath.wav")
     # DEV
     # _DROWN_SOUND.set_volume(0)
     _ACTIONS: tuple[Action, ...] = (  # Order is also precedence - First is highest
@@ -46,7 +48,7 @@ class Player(Sprite):
 
     def __init__(self) -> None:
         # NOTE: Current `Camera` has to be initialized before `Player.__init__` is called
-        self._inventory = ui.Inventory({}).with_parent(Camera.current)
+        self.inventory = ui.Inventory({}).with_parent(Camera.current)
         self._health_bar = ui.HealthBar().with_parent(Camera.current)
         self._oxygen_bar = ui.OxygenBar().with_parent(Camera.current)
         self._hunger_bar = ui.HungerBar().with_parent(Camera.current)
@@ -92,9 +94,9 @@ class Player(Sprite):
     # DEV
     def dev_eating(self) -> None:
         if self._current_action == "1" and self._key_just_pressed:
-            for item_name, item in tuple(self._inventory.items()):
-                if item.count > 0 and Eatable in item.tags:
-                    self._inventory[item_name].count -= 1
+            for item_name, item in tuple(self.inventory.items()):
+                if Eatable in item.tags:
+                    self.inventory[item_name].count -= 1
                     self._hunger_bar.fill()
                     break
 
@@ -102,13 +104,11 @@ class Player(Sprite):
     def dev_drinking(self) -> None:
         if self._current_action == "2" and self._key_just_pressed:
             if (
-                "bladder fish" in self._inventory
-                and self._inventory["bladder fish"].count >= 1
-                and "kelp" in self._inventory
-                and self._inventory["kelp"].count >= 2
+                self.inventory[ItemID.BLADDER_FISH].count >= 1
+                and self.inventory[ItemID.KELP].count >= 2
             ):
-                self._inventory["bladder fish"].count -= 1
-                self._inventory["kelp"].count -= 2
+                self.inventory[ItemID.BLADDER_FISH].count -= 1
+                self.inventory[ItemID.KELP].count -= 2
                 self._thirst_bar.fill()
 
     def is_submerged(self) -> bool:
@@ -120,6 +120,9 @@ class Player(Sprite):
         self_height = self.global_position.y + self.texture_size.y / 2 - 1
         wave_height = ocean.Water.wave_height_at(self.global_position.x)
         return self_height - wave_height > 0
+
+    def is_in_building(self) -> bool:
+        return isinstance(self.parent, Building)
 
     def is_colliding_with_ocean_floor(self) -> bool:
         # FIXME: Find out why it says `int | float` and not just `int` for `<Vec2i>.x`
@@ -169,7 +172,7 @@ class Player(Sprite):
             keyboard.is_pressed("s") - keyboard.is_pressed("w"),
         )
         # Is in builindg movement
-        if isinstance(self.parent, Building):
+        if self.is_in_building():
             self.handle_movement_in_building(velocity)
             return
         # Is in air movement
@@ -203,7 +206,9 @@ class Player(Sprite):
             return
         # Restore oxygen if above ocean waves
         if not self.is_submerged():
-            self._oxygen_bar.fill()
+            if self._oxygen_bar.value != self._oxygen_bar.MAX_VALUE:
+                self._BREATH_SOUND.play()
+                self._oxygen_bar.fill()
             return
         # Decrease health if no oxygen, and spawn particles each tick
         if self._oxygen_bar.value == 0:
@@ -251,7 +256,7 @@ class Player(Sprite):
         for node in Sprite.texture_instances.values():
             if (
                 isinstance(node, Interactable)
-                and node._interactable
+                and node.interactable
                 and (condition_and_dist := node.is_in_range_of(global_point))[0]
             ):  # I know this syntax might be a bit too much,
                 # but know that it made it easier to split logic into mixin class
@@ -295,10 +300,16 @@ class Player(Sprite):
         # Collect collectable that is selected
         # `self._curr_interactable` is already in reach
         if self._current_action == "e" and self._key_just_pressed:
-            self._current_interactable.collect_into(self._inventory.inner)
+            self._current_interactable.collect_into(self.inventory.inner)
             self._current_interactable.queue_free()
             self._current_interactable = None
 
     # TODO: Implement
     def on_death(self) -> None:
         self.queue_free()
+        if isinstance(self._current_interactable, Interactable):
+            self._current_interactable.loose_focus()
+        # Reset states
+        self._current_interactable = None
+        self._current_action = None
+        self._key_just_pressed = False

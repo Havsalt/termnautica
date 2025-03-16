@@ -3,6 +3,7 @@ import colex
 from charz import Sprite
 
 from .props import Collectable, Interactable
+from .item import ItemID
 
 
 class Ore(Interactable, Collectable, Sprite):
@@ -13,18 +14,24 @@ class Ore(Interactable, Collectable, Sprite):
 
 
 class Gold(Ore):
-    NAME = "gold_ore"
+    ID = ItemID.GOLD_ORE
     color = colex.GOLDENROD
     texture = ["▓▒▓"]
 
 
 class Titanium(Ore):
-    NAME = "titanium_ore"
+    ID = ItemID.TITANIUM_ORE
     color = colex.from_hex("#797982")
     texture = ["▒░▒"]
 
 
 class Copper(Ore):
-    NAME = "copper_ore"
+    ID = ItemID.COPPER_ORE
     color = colex.from_hex("#B87333")
+    texture = ["▒▓▒"]
+
+
+class Coal(Ore):
+    ID = ItemID.COAL_ORE
+    color = colex.BLACK
     texture = ["▒▓▒"]

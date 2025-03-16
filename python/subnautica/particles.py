@@ -34,9 +34,9 @@ class Bubble(AnimatedSprite):
         Float=Animation("bubble/float"),
         Pop=Animation("bubble/pop"),
     )
-    texture = animations.Float.frames[0]
-    # FIXME: Temp fix until fixed in `charz`
-    _has_updated: bool = True
+    is_playing = True
+    current_animation = animations.Float
+    texture = current_animation.frames[0]
 
     def __init__(self) -> None:
         if random.randint(0, 1):
@@ -54,14 +54,10 @@ class Bubble(AnimatedSprite):
         self.color = random.choice(self._COLORS)
         self.position.y -= self._FLOAT_SPEED
         if not self.is_submerged() and self.current_animation != self.animations.Pop:
-            self._has_updated = False
             self.play("Pop")
-        elif self._has_updated and self.current_animation == self.animations.Pop:
+        elif self.current_animation == self.animations.Pop:
             self.queue_free()
-        elif not self._has_updated:
-            self._has_updated = True
         elif not self.is_playing:
-            self._has_updated = False
             self.play("Float")
 
 

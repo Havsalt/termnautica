@@ -43,8 +43,10 @@ class DevCamera(Camera):
 
 class App(Engine):
     fps = 16
-    screen = RustScreen(auto_resize=True)
-    clear_console = True
+    screen = RustScreen(
+        auto_resize=True,
+        initial_clear=True,
+    )
 
     def __init__(self) -> None:
         camera = (

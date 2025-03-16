@@ -118,11 +118,14 @@ class KelpSpawner(Spawner[Kelp]):
     texture = [",|."]
 
     def init_spawned(self, instance: Kelp) -> None:
-        if random.randint(0, 1):
-            instance.is_on_last_frame = True
+        assert instance.current_animation is not None, "Animation should have started"
+        instance._frame_index = random.randint(
+            0,
+            len(instance.current_animation.frames) - 1,
+        )
 
 
-class OreSpawner(Spawner[ores.Gold | ores.Titanium | ores.Copper]):
+class OreSpawner(Spawner[ores.Gold | ores.Titanium | ores.Copper | ores.Coal]):
     _SPAWN_OFFSET = Vec2(-1, 0)
     position = Vec2.ZERO
     color = colex.GRAY

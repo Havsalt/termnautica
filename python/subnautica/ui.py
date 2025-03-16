@@ -7,7 +7,10 @@ from math import ceil
 import colex
 from charz import Sprite, Label, Vec2, text
 
-from .item import Item
+from .item import Item, ItemID
+
+
+type Count = int
 
 
 _UI_Z_INDEX: int = 5
@@ -20,7 +23,7 @@ class Inventory(Sprite):
     # color = colex.from_hex(background="#24ac2d")
     color = colex.BOLD + colex.WHITE
 
-    def __init__(self, content: dict[str, int]) -> None:
+    def __init__(self, content: dict[ItemID, Count]) -> None:
         self.inner = {
             item_name: Item(item_name, count) for item_name, count in content.items()
         }
@@ -37,31 +40,34 @@ class Inventory(Sprite):
     def _update_texture(self) -> None:
         self.texture = text.fill_lines(
             [
-                f"- {item_name.capitalize().replace("_", " ")}: {item.count}"
-                for item_name, item in self.inner.items()
+                f"- {item_id.name.capitalize().replace("_", " ")}: {item.count}"
+                for item_id, item in self.inner.items()
             ]
         )
         self.texture.insert(0, "Inventory:")
 
-    def __getitem__(self, key: str) -> Item:
+    def __getitem__(self, key: ItemID) -> Item:
         return self.inner[key]
 
-    def __setitem__(self, key: str, value: Item) -> None:
+    def __setitem__(self, key: ItemID, value: Item) -> None:
         self.inner[key] = value
 
-    def __contains__(self, key: object) -> bool:
+    def __contains__(self, key: ItemID) -> bool:
         return key in self.inner
 
-    def __iter__(self) -> Iterator[str]:
+    def __iter__(self) -> Iterator[ItemID]:
         return self.inner.__iter__()
+    
+    def get[T](self, key: ItemID, *, default: T) -> Item | T:
+        return self.inner.get(key, default)
 
-    def keys(self) -> dict_keys[str, Item]:
+    def keys(self) -> dict_keys[ItemID, Item]:
         return self.inner.keys()
 
-    def values(self) -> dict_values[str, Item]:
+    def values(self) -> dict_values[ItemID, Item]:
         return self.inner.values()
 
-    def items(self) -> dict_items[str, Item]:
+    def items(self) -> dict_items[ItemID, Item]:
         return self.inner.items()
 
 

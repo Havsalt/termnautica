@@ -7,23 +7,16 @@ from .props import Eatable, Interactable, Collectable
 from . import ocean
 
 
-# Expand text flipping db
+# Expand text flipping DB
 text._h_conversions["»"] = "«"
 text._h_conversions["«"] = "»"
 
 
 class BirdAI:
     _SPEED_SCALE: float = 0.3
-    _is_on_last_frame: bool = False
 
     def update(self, _delta: float) -> None:
         assert isinstance(self, AnimatedSprite)
-
-        if self._is_on_last_frame:
-            self._is_on_last_frame = False
-            self.play("Flap")
-        if not self.is_playing:
-            self._is_on_last_frame = True
 
         velocity = Vec2(
             random.randint(-1, 1),
@@ -35,10 +28,15 @@ class BirdAI:
         ):
             self.global_position += Vec2.UP
 
+        if random.randint(1, 100) < 30:
+            self.texture = text.flip_lines_h(self.texture)
+
 
 class BaseBird(BirdAI, Eatable, Interactable, Collectable, AnimatedSprite):
     transparency = "."
     centered = True
+    repeat = True
+    is_playing = True
 
 
 class SmallBird(BaseBird):
@@ -46,7 +44,8 @@ class SmallBird(BaseBird):
         Flap=Animation("birds/small/flap"),
     )
     color = colex.SADDLE_BROWN
-    texture = animations.Flap.frames[0]
+    current_animation = animations.Flap
+    texture = current_animation.frames[0]
 
 
 class MediumBird(BaseBird):
@@ -55,7 +54,8 @@ class MediumBird(BaseBird):
     )
     color = colex.LIGHT_GRAY
     texture = ["V"]
-    texture = animations.Flap.frames[0]
+    current_animation = animations.Flap
+    texture = current_animation.frames[0]
 
 
 class LargeBird(BaseBird):
@@ -64,4 +64,5 @@ class LargeBird(BaseBird):
     )
     color = colex.BURLY_WOOD
     texture = ["V"]
-    texture = animations.Flap.frames[0]
+    current_animation = animations.Flap
+    texture = current_animation.frames[0]

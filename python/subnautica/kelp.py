@@ -3,17 +3,20 @@ import colex
 from charz import AnimatedSprite, AnimationSet, Animation, Sprite, Vec2
 
 from .props import Collectable, Interactable
+from .item import ItemID
 
 
 class Kelp(Interactable, Collectable, AnimatedSprite):
-    NAME = "kelp"
+    ID = ItemID.KELP
     color = colex.SEA_GREEN
+    transparency = " "
     animations = AnimationSet(
         Sway=Animation("kelp"),
     )
-    transparency = " "
-    texture = animations.Sway.frames[0]
-    is_on_last_frame = False
+    repeat = True
+    is_playing = True
+    current_animation = animations.Sway
+    texture = current_animation.frames[0]
 
     def __init__(self) -> None:
         self._supporting_sand = Sprite(
@@ -23,10 +26,3 @@ class Kelp(Interactable, Collectable, AnimatedSprite):
             texture=[",|."],
             color=colex.from_hex("#C2B280"),
         )
-
-    def update(self, _delta: float) -> None:
-        if self.is_on_last_frame:
-            self.is_on_last_frame = False
-            self.play("Sway")
-        if not self.is_playing:
-            self.is_on_last_frame = True
