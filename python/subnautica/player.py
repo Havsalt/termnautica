@@ -5,7 +5,7 @@ from charz import Camera, Sprite, Label, Collider, Hitbox, Vec2
 
 from . import ui, ocean
 from .props import Collectable, Interactable, Building
-from .tags import Eatable, Drinkable
+from .tags import Eatable, Drinkable, Healing
 from .particles import Bubble, Blood
 from .item import ItemID
 from .utils import move_toward
@@ -30,6 +30,7 @@ class Player(Collider, Sprite):
         "e",
         "1",
         "2",
+        "3",
         "space",
     )
     position = Vec2(17, -18)
@@ -80,6 +81,13 @@ class Player(Collider, Sprite):
             color=colex.AQUA,
             position=Vec2(40, -2),
         )
+        self._hotbar3 = Label(
+            self,
+            text="Heal [3".rjust(11),
+            transparency=" ",
+            color=colex.PINK,
+            position=Vec2(40, -1),
+        )
 
     def update(self, _delta: float) -> None:
         # Order of tasks
@@ -91,9 +99,10 @@ class Player(Collider, Sprite):
         self.handle_oxygen()
         self.handle_hunger()
         self.handle_thirst()
-        # NOTE: Order of drinking and eating is not visually correct
+        # NOTE: Order of drinking, eating and healing is not visually correct
         self.handle_drinking()
         self.handle_eating()
+        self.handle_healing()
         # Check if dead
         if self._health_bar.value == 0:
             self.on_death()
@@ -111,17 +120,18 @@ class Player(Collider, Sprite):
                 if not isinstance(tag, Eatable):
                     continue
                 # Is `Eatable`
-                found_eatable = True
                 item.count -= 1
                 self._hunger_bar.value += tag.hunger_value
                 # Check if also `Drinkable`
                 for tag2 in item.tags:
                     if isinstance(tag2, Drinkable):
                         self._thirst_bar.value += tag2.thirst_value
+                found_eatable = True
                 break
             if found_eatable:
                 break
 
+    # TODO: Check for drinking, eating and healing at the same time
     def handle_drinking(self) -> None:
         if not (self._current_action == "2" and self._key_just_pressed):
             return
@@ -135,16 +145,37 @@ class Player(Collider, Sprite):
                 if not isinstance(tag, Drinkable):
                     continue
                 # Is `Drinkable`
-                found_drinkable = True
                 item.count -= 1
                 self._thirst_bar.value += tag.thirst_value
                 # Check if also `Eatable`
                 for tag2 in item.tags:
                     if isinstance(tag2, Eatable):
                         self._hunger_bar.value += tag2.hunger_value
+                found_drinkable = True
                 break
             if found_drinkable:
                 break
+    
+    def handle_healing(self) -> None:
+        if not (self._current_action == "3" and self._key_just_pressed):
+            return
+        
+        found_healing = False
+        for item in self.inventory.values():
+            if item.count < 1:
+                continue
+
+            for tag in item.tags:
+                if not isinstance(tag, Healing):
+                    continue
+                # Is `Healing`
+                item.count -= 1
+                self._health_bar.value += tag.heal_value
+                found_healing = True
+                break
+            if found_healing:
+                break
+
 
     def is_submerged(self) -> bool:
         self_height = self.global_position.y - self.texture_size.y / 2

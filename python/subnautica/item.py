@@ -33,3 +33,5 @@ class ItemID(Enum):
     SALMON = auto()
     GRILLED_SALMON = auto()
     WATER_BOTTLE = auto()
+    BANDAGE = auto()
+    MEDKIT = auto()
