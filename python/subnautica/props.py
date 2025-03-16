@@ -5,6 +5,8 @@ Classes defined here will be used as `mixin components`.
 They may also provide methods, either to be overwritten, or as base case.
 """
 
+from typing import Self
+
 import pygame
 import colex
 from charz import Sprite, Hitbox, Vec2, clamp
@@ -55,6 +57,10 @@ class Interactable:
     interactable: bool = True  # Turn off when in use
     _last_z_index: int | None = None
 
+    def with_interacting(self, state: bool, /) -> Self:
+        self.interactable = state
+        return self
+
     def grab_focus(self) -> None:
         assert isinstance(self, Sprite)
         self.color = colex.REVERSE + (self.__class__.color or colex.WHITE)
@@ -84,6 +90,9 @@ class Interactable:
 
 
 class Eatable: ...
+
+
+class Drinkable: ...
 
 
 class Building:

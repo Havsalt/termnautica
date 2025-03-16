@@ -106,6 +106,7 @@ class App(Engine):
         ocean.Water.advance_wave_time()
         if keyboard.is_pressed("esc"):
             self.is_running = False
+            self.screen.clear()
             pygame.quit()
 
 

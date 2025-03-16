@@ -29,3 +29,4 @@ class ItemID(Enum):
     GOLD_FISH = auto()
     COD = auto()
     SALMON = auto()
+    WATER_BOTTLE = auto()

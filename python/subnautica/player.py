@@ -4,7 +4,7 @@ import pygame
 from charz import Camera, Sprite, Label, Vec2
 
 from . import ui, ocean
-from .props import Collectable, Interactable, Eatable, Building
+from .props import Collectable, Interactable, Eatable, Drinkable, Building
 from .particles import Bubble, Blood
 from .item import ItemID
 from .utils import move_toward
@@ -48,7 +48,11 @@ class Player(Sprite):
 
     def __init__(self) -> None:
         # NOTE: Current `Camera` has to be initialized before `Player.__init__` is called
-        self.inventory = ui.Inventory({}).with_parent(Camera.current)
+        self.inventory = ui.Inventory(
+            {
+                ItemID.WATER_BOTTLE: (2, [Drinkable]),
+            }
+        ).with_parent(Camera.current)
         self._health_bar = ui.HealthBar().with_parent(Camera.current)
         self._oxygen_bar = ui.OxygenBar().with_parent(Camera.current)
         self._hunger_bar = ui.HungerBar().with_parent(Camera.current)
@@ -95,7 +99,7 @@ class Player(Sprite):
     def dev_eating(self) -> None:
         if self._current_action == "1" and self._key_just_pressed:
             for item_name, item in tuple(self.inventory.items()):
-                if Eatable in item.tags and self.inventory[item_name].count > 0:
+                if Eatable in item.tags and self.inventory[item_name].count >= 1:
                     self.inventory[item_name].count -= 1
                     self._hunger_bar.fill()
                     break
@@ -103,15 +107,10 @@ class Player(Sprite):
     # DEV
     def dev_drinking(self) -> None:
         if self._current_action == "2" and self._key_just_pressed:
-            if (
-                ItemID.BLADDER_FISH in self.inventory
-                and self.inventory[ItemID.BLADDER_FISH].count >= 1
-                and ItemID.KELP in self.inventory
-                and self.inventory[ItemID.KELP].count >= 2
-            ):
-                self.inventory[ItemID.BLADDER_FISH].count -= 1
-                self.inventory[ItemID.KELP].count -= 2
-                self._thirst_bar.fill()
+            for item in self.inventory.values():
+                if Drinkable in item.tags and item.count >= 1:
+                    item.count -= 1
+                    self._thirst_bar.fill()
 
     def is_submerged(self) -> bool:
         self_height = self.global_position.y - self.texture_size.y / 2
@@ -158,6 +157,7 @@ class Player(Sprite):
 
     def handle_movement_in_building(self, velocity: Vec2) -> None:
         assert isinstance(self.parent, Building)
+        # TODO: Check if is on floor first
         if self._current_action == "space" and self._key_just_pressed:
             self._y_speed = -self._JUMP_STRENGTH
         combined_velocity = Vec2(velocity.x, self._y_speed).clamped(

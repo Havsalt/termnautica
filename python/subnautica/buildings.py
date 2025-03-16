@@ -1,23 +1,18 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import colex
 from charz import Sprite, Label, Hitbox, Vec2, load_texture
 
 from .item import Item, ItemID
 from .recipe import Recipe
-from .props import Interactable, Building, Crafter
+from .props import Interactable, Building, Crafter, Drinkable
 
 from .player import Player
 
 
 class Smelter(Interactable, Crafter, Sprite):
-    color = colex.ORANGE_RED
-    texture = [
-        "/^\\¨¨¨\\",
-        "\\_/___/",
-    ]
+    _REACH = 3
+    _REACH_CENTER = Vec2(3, 0.5)
     _RECIPES = [
         Recipe(
             product=Item(ItemID.COPPER_BAR, 2),
@@ -41,6 +36,11 @@ class Smelter(Interactable, Crafter, Sprite):
             },
         ),
     ]
+    color = colex.ORANGE_RED
+    texture = [
+        "/^\\¨¨¨\\",
+        "\\_/___/",
+    ]
 
     def on_interact(self, interactor: Sprite) -> None:
         assert isinstance(
@@ -59,7 +59,57 @@ class Smelter(Interactable, Crafter, Sprite):
                     inventory[idgredient].count -= count
                 # Add product
                 if not recipe.product.id in inventory:
-                    inventory[recipe.product.id] = Item(recipe.product.id, 0)
+                    inventory[recipe.product.id] = Item(
+                        recipe.product.id,
+                        count=0,
+                        tags=recipe.product.tags,
+                    )
+                inventory[recipe.product.id].count += recipe.product.count
+
+
+class BasicFabricator(Interactable, Crafter, Sprite):
+    _REACH = 4
+    _REACH_FRACTION = 1
+    _RECIPES = [
+        Recipe(
+            product=Item(ItemID.WATER_BOTTLE, 1, tags=[Drinkable]),
+            idgredients={
+                ItemID.BLADDER_FISH: 1,
+                ItemID.KELP: 2,
+            },
+        )
+    ]
+    centered = True
+    color = colex.MEDIUM_AQUAMARINE
+    transparency = " "
+    texture = [
+        "__..__",
+        ":    :",
+        "\\.__./",
+    ]
+
+    def on_interact(self, interactor: Sprite) -> None:
+        assert isinstance(
+            interactor, Player
+        ), "Only `Player` can interact with `Smelter`"
+
+        inventory = interactor.inventory  # Ref
+
+        for recipe in self._RECIPES:
+            if all(
+                inventory.get(idgredient, default=Item(ItemID.NONE, 0)).count >= count
+                for idgredient, count in recipe.idgredients.items()
+            ):
+                # Consume idgredients
+                for idgredient, count in recipe.idgredients.items():
+                    inventory[idgredient].count -= count
+                # Add product
+                if not recipe.product.id in inventory:
+                    inventory[recipe.product.id] = Item(
+                        recipe.product.id,
+                        count=0,
+                        tags=recipe.product.tags,
+                    )
                 inventory[recipe.product.id].count += recipe.product.count
 
 
@@ -102,12 +152,15 @@ class Lifepod(Interactable, Building, Sprite):
             position=self.texture_size / -2,
         )
         self._name.position.y -= 3
-        self._ladder = Ladder(self, visible=False)
-        self._ladder.interactable = False
-        self._smelter = Smelter(self, position=Vec2(2, 2), visible=False)
-        self._smelter.interactable = False
+        self._children = [
+            Smelter(self, position=Vec2(2, 2), visible=False).with_interacting(False),
+            Ladder(self, visible=False).with_interacting(False),
+            BasicFabricator(self, position=Vec2(-7, 0), visible=False).with_interacting(
+                False
+            ),
+        ]
         self._smelter_overlay = Sprite(
-            self._smelter,
+            self._children[0],
             texture=["", Smelter.texture[1]],
         )
 
@@ -123,10 +176,9 @@ class Lifepod(Interactable, Building, Sprite):
         # self.z_index = 2
         self.texture = load_texture("lifepod/inside.txt")
         self._curr_interactor = interactor
-        self._ladder.show()
-        self._ladder.interactable = True
-        self._smelter.show()
-        self._smelter.interactable = True
+        for child in self._children:
+            child.show()
+            child.interactable = True
 
     # TODO: Improve
     def update(self, _delta: float) -> None:
@@ -153,7 +205,6 @@ class Lifepod(Interactable, Building, Sprite):
         self.z_index = self.__class__.z_index
         self.texture = load_texture("lifepod/front.txt")
         # Disable inside interactables
-        self._ladder.hide()
-        self._ladder.interactable = False
-        self._smelter.hide()
-        self._smelter.interactable = False
+        for child in self._children:
+            child.hide()
+            child.interactable = False

@@ -11,6 +11,7 @@ from .item import Item, ItemID
 
 
 type Count = int
+type Tags = list[type]
 
 
 _UI_Z_INDEX: int = 5
@@ -23,9 +24,10 @@ class Inventory(Sprite):
     # color = colex.from_hex(background="#24ac2d")
     color = colex.BOLD + colex.WHITE
 
-    def __init__(self, content: dict[ItemID, Count]) -> None:
+    def __init__(self, content: dict[ItemID, tuple[Count, Tags]]) -> None:
         self.inner = {
-            item_name: Item(item_name, count) for item_name, count in content.items()
+            item_name: Item(item_name, count, tags)
+            for item_name, (count, tags) in content.items()
         }
         self._update_texture()
 
@@ -57,7 +59,7 @@ class Inventory(Sprite):
 
     def __iter__(self) -> Iterator[ItemID]:
         return self.inner.__iter__()
-    
+
     def get[T](self, key: ItemID, *, default: T) -> Item | T:
         return self.inner.get(key, default)
 
