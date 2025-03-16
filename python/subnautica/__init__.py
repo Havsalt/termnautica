@@ -16,7 +16,7 @@ pygame.mixer.init()
 from rust import RustScreen
 from . import ocean
 from .player import Player
-from .buildings import Lifepod
+from .buildings.lifepod import Lifepod
 
 
 # NOTE: Game time is calculated in frames (int),
@@ -68,14 +68,14 @@ class App(Engine):
         pygame.mixer_music.set_volume(0.50)
         pygame.mixer_music.play(-1)  # Infinite loop
         # pygame.mixer.set_num_channels(64)
-        # Dev stuff stashed away in this method
+        # DEV: Stuff stashed away in this method
         self.dev()
 
     def dev(self) -> None:
         from .fish import SwordFish
         from .birds import SmallBird, MediumBird, LargeBird
 
-        SwordFish(position=Vec2(20, -18))
+        SwordFish(position=Vec2(40, -18))
 
         for i in range(-10, 10):
             if random.randint(1, 3) == 1:
@@ -91,6 +91,10 @@ class App(Engine):
                 x=random.randint(0, 5) + i * 15 - 50,
                 y=random.randint(0, 10) - 20,
             )
+
+        from .buildings.grill import Grill
+
+        Grill(position=Vec2(9, 17))
 
         # from .fish import WaterFish
         # from .spawners import FishSpawner
@@ -108,6 +112,22 @@ class App(Engine):
             self.is_running = False
             self.screen.clear()
             pygame.quit()
+
+        self.dev_update()  # DEV
+
+    def dev_update(self) -> None:
+        from .buildings.hallway import Hallway
+        from .item import ItemID
+
+        if keyboard.is_pressed("b"):
+            if (
+                ItemID.TITANIUM_BAR in self.player.inventory
+                and self.player.inventory[ItemID.TITANIUM_BAR].count >= 3
+            ):
+                self.player.inventory[ItemID.TITANIUM_BAR].count -= 3
+                Hallway().with_global_position(
+                    self.player.global_position + Vec2.RIGHT * 5
+                )
 
 
 def main() -> int | None:

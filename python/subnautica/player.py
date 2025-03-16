@@ -1,10 +1,11 @@
 import colex
 import keyboard
 import pygame
-from charz import Camera, Sprite, Label, Vec2
+from charz import Camera, Sprite, Label, Collider, Hitbox, Vec2
 
 from . import ui, ocean
-from .props import Collectable, Interactable, Eatable, Drinkable, Building
+from .props import Collectable, Interactable, Building
+from .tags import Eatable, Drinkable
 from .particles import Bubble, Blood
 from .item import ItemID
 from .utils import move_toward
@@ -13,7 +14,7 @@ from .utils import move_toward
 type Action = str | int
 
 
-class Player(Sprite):
+class Player(Collider, Sprite):
     _GRAVITY: float = 0.91
     _JUMP_STRENGTH: float = 4
     _AIR_FRICTION: float = 0.7
@@ -32,6 +33,7 @@ class Player(Sprite):
         "space",
     )
     position = Vec2(17, -18)
+    hitbox = Hitbox(size=Vec2(5, 3), centered=True)
     z_index = 1
     color = colex.AQUA
     transparency = " "
@@ -50,7 +52,7 @@ class Player(Sprite):
         # NOTE: Current `Camera` has to be initialized before `Player.__init__` is called
         self.inventory = ui.Inventory(
             {
-                ItemID.WATER_BOTTLE: (2, [Drinkable]),
+                ItemID.WATER_BOTTLE: (2, [Drinkable(20)]),
             }
         ).with_parent(Camera.current)
         self._health_bar = ui.HealthBar().with_parent(Camera.current)
@@ -89,28 +91,60 @@ class Player(Sprite):
         self.handle_oxygen()
         self.handle_hunger()
         self.handle_thirst()
-        self.dev_drinking()
-        self.dev_eating()
+        # NOTE: Order of drinking and eating is not visually correct
+        self.handle_drinking()
+        self.handle_eating()
         # Check if dead
         if self._health_bar.value == 0:
             self.on_death()
 
-    # DEV
-    def dev_eating(self) -> None:
-        if self._current_action == "1" and self._key_just_pressed:
-            for item_name, item in tuple(self.inventory.items()):
-                if Eatable in item.tags and self.inventory[item_name].count >= 1:
-                    self.inventory[item_name].count -= 1
-                    self._hunger_bar.fill()
-                    break
+    def handle_eating(self) -> None:
+        if not (self._current_action == "1" and self._key_just_pressed):
+            return
 
-    # DEV
-    def dev_drinking(self) -> None:
-        if self._current_action == "2" and self._key_just_pressed:
-            for item in self.inventory.values():
-                if Drinkable in item.tags and item.count >= 1:
-                    item.count -= 1
-                    self._thirst_bar.fill()
+        found_eatable = False
+        for item in self.inventory.values():
+            if item.count < 1:
+                continue
+
+            for tag in item.tags:
+                if not isinstance(tag, Eatable):
+                    continue
+                # Is `Eatable`
+                found_eatable = True
+                item.count -= 1
+                self._hunger_bar.value += tag.hunger_value
+                # Check if also `Drinkable`
+                for tag2 in item.tags:
+                    if isinstance(tag2, Drinkable):
+                        self._thirst_bar.value += tag2.thirst_value
+                break
+            if found_eatable:
+                break
+
+    def handle_drinking(self) -> None:
+        if not (self._current_action == "2" and self._key_just_pressed):
+            return
+
+        found_drinkable = False
+        for item in self.inventory.values():
+            if item.count < 1:
+                continue
+
+            for tag in item.tags:
+                if not isinstance(tag, Drinkable):
+                    continue
+                # Is `Drinkable`
+                found_drinkable = True
+                item.count -= 1
+                self._thirst_bar.value += tag.thirst_value
+                # Check if also `Eatable`
+                for tag2 in item.tags:
+                    if isinstance(tag2, Eatable):
+                        self._hunger_bar.value += tag2.hunger_value
+                break
+            if found_drinkable:
+                break
 
     def is_submerged(self) -> bool:
         self_height = self.global_position.y - self.texture_size.y / 2
@@ -188,12 +222,12 @@ class Player(Sprite):
         # NOTE: Order of x/y matter
         self.position.y += combined_velocity.y
         # Revert motion if ended up colliding
-        if self.is_colliding_with_ocean_floor():
+        if self.is_colliding_with_ocean_floor() or self.is_colliding():
             self.position.y -= combined_velocity.y
             self._y_speed = 0  # Hit ocean floor
         self.position.x += combined_velocity.x
         # Revert motion if ended up colliding
-        if self.is_colliding_with_ocean_floor():
+        if self.is_colliding_with_ocean_floor() or self.is_colliding():
             self.position.x -= combined_velocity.x
         # Apply friction
         friction = self._WATER_FRICTION if self.is_submerged() else self._AIR_FRICTION
@@ -223,7 +257,7 @@ class Player(Sprite):
             )
             return
         # Decrease oxygen
-        self._oxygen_bar.value -= 1
+        self._oxygen_bar.value -= 1 / 16
         raw_count = self._oxygen_bar.MAX_VALUE / self._oxygen_bar.MAX_CELL_COUNT
         # NOTE: Might be fragile logic, but works at least when
         #       MAX_VALUE = 300 and MAX_CELL_COUNT = 10
@@ -235,7 +269,7 @@ class Player(Sprite):
             self._DROWN_SOUND.play()
 
     def handle_hunger(self) -> None:
-        self._hunger_bar.value -= 1
+        self._hunger_bar.value -= 1 / 16
         if self._hunger_bar.value == 0:
             self._health_bar.value -= 1
             Blood().with_global_position(
@@ -244,7 +278,7 @@ class Player(Sprite):
             )
 
     def handle_thirst(self) -> None:
-        self._thirst_bar.value -= 1
+        self._thirst_bar.value -= 1 / 16
         if self._thirst_bar.value == 0:
             self._health_bar.value -= 1
             Blood().with_global_position(

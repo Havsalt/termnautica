@@ -7,6 +7,11 @@ from .render import render_all as _render_all
 __all__ = ["RustScreen"]
 
 
+CONSOLE_CLEAR_CODE = "\x1b[2J\x1b[H"
+CURSOR_HIDE_CODE = "\x1b[?25l"
+CURSOR_SHOW_CODE = "\x1b[?25h"
+
+
 class RustScreen(_Screen):
     def refresh(self) -> None:
         self._resize_if_necessary()
@@ -35,3 +40,21 @@ class RustScreen(_Screen):
         # write and flush
         self.stream.write(out)
         self.stream.flush()
+
+    def on_cleanup(self) -> None:
+        if self.hide_cursor and self.is_using_ansi():
+            self.stream.write(CURSOR_SHOW_CODE)
+            self.stream.flush()
+        if self.final_clear:
+            old_fill = self.transparency_fill
+            self.transparency_fill = " "
+            self.clear()
+            out = _render_all(
+                self,
+                [],
+                _Camera.current,
+                0,
+                0,
+            )
+            self.show(out)
+            self.transparency_fill = old_fill

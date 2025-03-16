@@ -7,7 +7,8 @@ import colex
 from colex import ColorValue
 from charz import Sprite, Vec2, text, clamp, sign
 
-from .props import Collectable, Interactable, Eatable
+from .props import Collectable, Interactable
+from .tags import Eatable, Drinkable
 from .player import Player
 from .item import ItemID
 from .utils import move_toward
@@ -132,31 +133,37 @@ class FishAI:
             self.speed_x = move_toward(self.speed_x, 0, self._FRICTION.x)
 
 
-class BaseFish(FishAI, Eatable, Interactable, Collectable, Sprite):
+class BaseFish(FishAI, Interactable, Collectable, Eatable, Sprite):
     _SOUND_COLLECT = pygame.mixer.Sound("assets/sounds/collect/fish.wav")
     centered = True
 
 
 class SmallFish(BaseFish):
     ID = ItemID.GOLD_FISH
+    hunger_value = 5
     color = colex.DARK_SALMON
     texture = ["<><"]
 
 
 class MediumFish(BaseFish):
     ID = ItemID.COD
+    hunger_value = 7
     color = colex.from_hex("#659285")
     texture = ["<[Xx"]
 
 
 class LongFish(BaseFish):
     ID = ItemID.SALMON
+    hunger_value = 9
     color = colex.SALMON
     texture = ["<º)))))}><"]
 
 
-class WaterFish(BaseFish):
+class WaterFish(FishAI, Interactable, Collectable, Drinkable, Eatable, Sprite):
+    _SOUND_COLLECT = pygame.mixer.Sound("assets/sounds/collect/fish.wav")
     ID = ItemID.BLADDER_FISH
+    hunger_value = 2
+    thirst_value = 10
     color = colex.PINK
     texture = ["<?))>("]
 

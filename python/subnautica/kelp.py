@@ -1,4 +1,3 @@
-import pygame
 import colex
 from charz import AnimatedSprite, AnimationSet, Animation, Sprite, Vec2
 

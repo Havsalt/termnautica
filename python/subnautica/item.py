@@ -8,7 +8,7 @@ from enum import Enum, auto, unique
 class Item:
     id: ItemID
     count: int
-    tags: list[type] = field(default_factory=list)
+    tags: list[type | object] = field(default_factory=list)
 
 
 @unique
@@ -27,6 +27,9 @@ class ItemID(Enum):
     KELP = auto()
     BLADDER_FISH = auto()
     GOLD_FISH = auto()
+    FRIED_FISH_NUGGET = auto()
     COD = auto()
+    COD_SOUP = auto()
     SALMON = auto()
+    GRILLED_SALMON = auto()
     WATER_BOTTLE = auto()

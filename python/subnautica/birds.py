@@ -3,7 +3,8 @@ import random
 import colex
 from charz import AnimatedSprite, AnimationSet, Animation, Vec2, text
 
-from .props import Eatable, Interactable, Collectable
+from .tags import Eatable
+from .props import Interactable, Collectable
 from . import ocean
 
 

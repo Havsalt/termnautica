@@ -5,13 +5,13 @@ from collections.abc import Iterator
 from math import ceil
 
 import colex
-from charz import Sprite, Label, Vec2, text
+from charz import Sprite, Label, Vec2, text, clamp
 
 from .item import Item, ItemID
 
 
 type Count = int
-type Tags = list[type]
+type Tags = list[type | object]
 
 
 _UI_Z_INDEX: int = 5
@@ -26,8 +26,8 @@ class Inventory(Sprite):
 
     def __init__(self, content: dict[ItemID, tuple[Count, Tags]]) -> None:
         self.inner = {
-            item_name: Item(item_name, count, tags)
-            for item_name, (count, tags) in content.items()
+            item_id: Item(item_id, count, tags)
+            for item_id, (count, tags) in content.items()
         }
         self._update_texture()
 
@@ -36,14 +36,26 @@ class Inventory(Sprite):
         for item_name, item in tuple(self.inner.items()):
             if item.count == 0:
                 del self.inner[item_name]
+            elif item.count < 0:
+                raise ValueError(f"Item {repr(item)} has negative count: {item.count}")
         # Update every frame because inventory items might be mutated
         self._update_texture()
 
     def _update_texture(self) -> None:
+        # Sort by items count
+        name_sorted = sorted(
+            tuple(self.inner.items()),
+            key=lambda pair: pair[0].name,
+        )
+        count_sorted = sorted(
+            name_sorted,
+            key=lambda pair: pair[1].count,
+            reverse=True,
+        )
         self.texture = text.fill_lines(
             [
                 f"- {item_id.name.capitalize().replace("_", " ")}: {item.count}"
-                for item_id, item in self.inner.items()
+                for item_id, item in count_sorted
             ]
         )
         self.texture.insert(0, "Inventory:")
@@ -73,6 +85,7 @@ class Inventory(Sprite):
         return self.inner.items()
 
 
+# TODO: Move sounds to `InfoBar` (and subclasses) using hooks
 class InfoBar(Label):
     MAX_VALUE: float = 100
     MAX_CELL_COUNT: int = 10
@@ -92,8 +105,8 @@ class InfoBar(Label):
 
     @value.setter
     def value(self, value: float) -> None:
-        self._value = max(0, value)  # Min value of 0
-        percent = value / self.MAX_VALUE
+        self._value = clamp(value, 0, self.MAX_VALUE)
+        percent = self._value / self.MAX_VALUE
         count = ceil(self.MAX_CELL_COUNT * percent)
         progress = (self.cell_char * count).ljust(self.MAX_CELL_COUNT, self.cell_fill)
         self.text = f"[{progress}]> {self.label}"
@@ -103,27 +116,28 @@ class InfoBar(Label):
 
 
 class HealthBar(InfoBar):
+    MAX_VALUE = 100
     position = Vec2(_UI_OFFSET, -5)
     label = "Health"
     color = colex.PALE_VIOLET_RED
 
 
 class OxygenBar(InfoBar):
-    MAX_VALUE = 30 * 16  # X seconds
+    MAX_VALUE = 30
     position = Vec2(_UI_OFFSET, -4)
     label = "O2"
     color = colex.AQUAMARINE
 
 
 class HungerBar(InfoBar):
-    MAX_VALUE = 120 * 16  # X seconds
+    MAX_VALUE = 120
     position = Vec2(_UI_OFFSET, -3)
     label = "Food"
     color = colex.SANDY_BROWN
 
 
 class ThirstBar(InfoBar):
-    MAX_VALUE = 90 * 16  # X seconds
+    MAX_VALUE = 90
     position = Vec2(_UI_OFFSET, -2)
     label = "Thirst"
     color = colex.AQUA
