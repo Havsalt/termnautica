@@ -10,7 +10,7 @@
 #   universal: false
 
 -e file:.
-charz==0.0.35
+charz==0.0.36
     # via termnautica
 colex==0.3.1
     # via charz
