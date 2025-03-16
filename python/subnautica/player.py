@@ -95,7 +95,7 @@ class Player(Sprite):
     def dev_eating(self) -> None:
         if self._current_action == "1" and self._key_just_pressed:
             for item_name, item in tuple(self.inventory.items()):
-                if Eatable in item.tags:
+                if Eatable in item.tags and self.inventory[item_name].count > 0:
                     self.inventory[item_name].count -= 1
                     self._hunger_bar.fill()
                     break
@@ -104,7 +104,9 @@ class Player(Sprite):
     def dev_drinking(self) -> None:
         if self._current_action == "2" and self._key_just_pressed:
             if (
-                self.inventory[ItemID.BLADDER_FISH].count >= 1
+                ItemID.BLADDER_FISH in self.inventory
+                and self.inventory[ItemID.BLADDER_FISH].count >= 1
+                and ItemID.KELP in self.inventory
                 and self.inventory[ItemID.KELP].count >= 2
             ):
                 self.inventory[ItemID.BLADDER_FISH].count -= 1
