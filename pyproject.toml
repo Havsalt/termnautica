@@ -6,7 +6,7 @@ authors = [
     { name = "Havsalt", email = "77575424+Havsalt@users.noreply.github.com" }
 ]
 dependencies = [
-    "charz[all]==0.0.36",
+    "charz[all]==0.0.40",
     "pygame~=2.6",
 ]
 readme = "README.md"
