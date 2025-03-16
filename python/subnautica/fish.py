@@ -159,8 +159,7 @@ class LongFish(BaseFish):
     texture = ["<º)))))}><"]
 
 
-class WaterFish(FishAI, Interactable, Collectable, Drinkable, Eatable, Sprite):
-    _SOUND_COLLECT = pygame.mixer.Sound("assets/sounds/collect/fish.wav")
+class WaterFish(Drinkable, BaseFish):
     ID = ItemID.BLADDER_FISH
     hunger_value = 2
     thirst_value = 10
