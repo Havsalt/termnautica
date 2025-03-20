@@ -3,7 +3,6 @@ import random
 import colex
 from charz import AnimatedSprite, AnimationSet, Animation, Vec2, text
 
-from .tags import Eatable
 from .props import Interactable, Collectable
 from . import ocean
 
@@ -33,7 +32,7 @@ class BirdAI:
             self.texture = text.flip_lines_h(self.texture)
 
 
-class BaseBird(BirdAI, Eatable, Interactable, Collectable, AnimatedSprite):
+class BaseBird(BirdAI, Interactable, Collectable, AnimatedSprite):
     transparency = "."
     centered = True
     repeat = True

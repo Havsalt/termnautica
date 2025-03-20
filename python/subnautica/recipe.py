@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from .item import Item, ItemID
+from .item import ItemID
 
 
 type Count = int
@@ -8,5 +8,5 @@ type Count = int
 
 @dataclass
 class Recipe:
-    product: Item
+    products: dict[ItemID, Count]
     idgredients: dict[ItemID, Count]

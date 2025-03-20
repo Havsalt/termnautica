@@ -61,35 +61,66 @@ class Bubble(AnimatedSprite):
             self.play("Float")
 
 
-class Blood(Sprite):
-    _INITAL_SPEED: float = 0.9
-    _GRAVITY: float = 0.1
-    _CONE: float = PI / 3
-    _COLORS: list[ColorValue] = [
-        colex.CRIMSON,
-        colex.PINK,
-        colex.INDIAN_RED,
-    ]
-    _TEXTURES: list[list[str]] = [
-        ["*"],
-        ["'"],
-    ]
-    texture = ["*"]
-    _time_remaining: int = 10
-    _direction: Vec2
+class Particle(Sprite):
+    _INITAL_SPEED: float = 1
+    _INITIAL_DIRECTION: Vec2 = Vec2.UP
+    _CONE: float = PI / 2
+    _GRAVITY_DIRECTION: Vec2 = Vec2.DOWN
+    _GRAVITY_STRENGTH: float = 1
+    _COLORS: list[ColorValue] = []
+    _TEXTURES: list[list[str]] = []
+    _LIFETIME = 10
+    _time_remaining: int = 0
+    _velocity: Vec2
 
     def __init__(self) -> None:
+        self._time_remaining = self._LIFETIME
         self.texture = random.choice(self._TEXTURES)
         self.color = random.choice(self._COLORS)
-        self._direction = (
-            Vec2.UP.rotated(randf(self._CONE, -self._CONE)) * self._INITAL_SPEED
+        direction = self._INITIAL_DIRECTION.normalized().rotated(
+            randf(self._CONE, -self._CONE)
         )
+        self._velocity = direction * self._INITAL_SPEED
 
     def update(self, _delta: float) -> None:
         self._time_remaining -= 1
         if self._time_remaining <= 0:
             self.queue_free()
-        self._direction += Vec2.DOWN * self._GRAVITY
-        self.position += self._direction
+        self._velocity += self._GRAVITY_DIRECTION.normalized() * self._GRAVITY_STRENGTH
+        self.position += self._velocity
         self.texture = random.choice(self._TEXTURES)
         self.color = random.choice(self._COLORS)
+
+
+class Blood(Particle):
+    _INITAL_SPEED = 0.9
+    _CONE = PI / 3
+    _GRAVITY_STRENGTH = 0.1
+    _COLORS = [
+        colex.CRIMSON,
+        colex.PINK,
+        colex.INDIAN_RED,
+    ]
+    _TEXTURES = [
+        ["*"],
+        ["'"],
+    ]
+
+
+class Fire(Particle):
+    _INITAL_SPEED = 2
+    _CONE = PI / 9
+    _GRAVITY_STRENGTH = 0.2
+    _COLORS = [
+        colex.RED,
+        colex.TOMATO,
+        colex.GOLD,
+        colex.CRIMSON,
+        colex.DARK_ORANGE,
+        colex.DARK_RED,
+    ]
+    _TEXTURES = [
+        ["^"],
+        ["*"],
+        ["."],
+    ]

@@ -1,31 +1,33 @@
 import colex
-from charz import Sprite
+from charz import Sprite, Vec2
 
 from ..player import Player
-from ..item import Item, ItemID
-from ..recipe import Recipe
+from ..particles import Fire
 from ..props import Crafter, Interactable
-from ..tags import Eatable, Drinkable
+from ..recipe import Recipe
+from ..item import ItemID
 
 
 class Grill(Interactable, Crafter, Sprite):
+    _FIRE_OFFSET: Vec2 = Vec2(1, 0)
+    _FIRE_EMMIT_INTERVAL: int = 8
     _RECIPES = [
         Recipe(
-            product=Item(ItemID.FRIED_FISH_NUGGET, 2, [Eatable(15)]),
+            products={ItemID.FRIED_FISH_NUGGET: 2},
             idgredients={
                 ItemID.GOLD_FISH: 1,
                 ItemID.KELP: 1,
             },
         ),
         Recipe(
-            product=Item(ItemID.COD_SOUP, 2, [Eatable(10), Drinkable(30)]),
+            products={ItemID.COD_SOUP: 2},
             idgredients={
                 ItemID.COD: 1,
                 ItemID.WATER_BOTTLE: 1,
             },
         ),
         Recipe(
-            product=Item(ItemID.GRILLED_SALMON, 2, [Eatable(20)]),
+            products={ItemID.GRILLED_SALMON: 2},
             idgredients={
                 ItemID.SALMON: 2,
                 ItemID.COAL_ORE: 1,
@@ -37,10 +39,17 @@ class Grill(Interactable, Crafter, Sprite):
         "~~~",
         "\\ /",
     ]
+    _time_since_emmit: int = 0
 
     def on_interact(self, interactor: Sprite) -> None:
         assert isinstance(
             interactor,
             Player,
         ), "Only `Player` can interact with `Smelter`"
-        self.craft_each_if_possible(interactor.inventory)
+        self.craft_each_if_possible(interactor._inventory)
+
+    def update(self, _delta: float) -> None:
+        self._time_since_emmit -= 1
+        if self._time_since_emmit <= 0:
+            self._time_since_emmit = self._FIRE_EMMIT_INTERVAL
+            Fire().with_global_position(self.global_position + self._FIRE_OFFSET)

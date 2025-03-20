@@ -1,102 +1,109 @@
 from __future__ import annotations
 
-from _collections_abc import dict_items, dict_keys, dict_values
-from collections.abc import Iterator
 from math import ceil
+from typing import MutableMapping
 
 import colex
-from charz import Sprite, Label, Vec2, text, clamp
+from charz import Node, Sprite, Label, Vec2, text, clamp
 
-from .item import Item, ItemID
+from .item import ItemID
 
 
 type Count = int
-type Tags = list[type | object]
 
 
-_UI_Z_INDEX: int = 5
-_UI_OFFSET: int = -50
+_UI_LEFT_OFFSET: int = -50
+_UI_RIGHT_OFFSET: int = 40
 
 
-class Inventory(Sprite):
-    z_index = _UI_Z_INDEX
-    position = Vec2(_UI_OFFSET, 0)
+class UIElement:
+    z_index = 5
+
+
+class Inventory(UIElement, Sprite):
+    position = Vec2(_UI_LEFT_OFFSET, 0)
     # color = colex.from_hex(background="#24ac2d")
     color = colex.BOLD + colex.WHITE
 
-    def __init__(self, content: dict[ItemID, tuple[Count, Tags]]) -> None:
-        self.inner = {
-            item_id: Item(item_id, count, tags)
-            for item_id, (count, tags) in content.items()
-        }
+    def __init__(
+        self,
+        parent: Node,
+        inventory_ref: MutableMapping[ItemID, Count],
+    ) -> None:
+        super().__init__(parent=parent)
+        self._inventory_ref = inventory_ref
         self._update_texture()
 
     def update(self, _delta: float) -> None:
         # Remove items that has a count of 0
-        for item_name, item in tuple(self.inner.items()):
-            if item.count == 0:
-                del self.inner[item_name]
-            elif item.count < 0:
-                raise ValueError(f"Item {repr(item)} has negative count: {item.count}")
+        for item, count in tuple(self._inventory_ref.items()):
+            if count == 0:
+                del self._inventory_ref[item]
+            elif count < 0:
+                raise ValueError(f"Item {repr(item)} has negative count: {count}")
         # Update every frame because inventory items might be mutated
         self._update_texture()
 
     def _update_texture(self) -> None:
         # Sort by items count
         name_sorted = sorted(
-            tuple(self.inner.items()),
+            self._inventory_ref.items(),
             key=lambda pair: pair[0].name,
         )
         count_sorted = sorted(
             name_sorted,
-            key=lambda pair: pair[1].count,
+            key=lambda pair: pair[1],
             reverse=True,
         )
         self.texture = text.fill_lines(
             [
-                f"- {item_id.name.capitalize().replace("_", " ")}: {item.count}"
-                for item_id, item in count_sorted
+                f"- {item.name.capitalize().replace("_", " ")}: {count}"
+                for item, count in count_sorted
             ]
         )
         self.texture.insert(0, "Inventory:")
 
-    def __getitem__(self, key: ItemID) -> Item:
-        return self.inner[key]
 
-    def __setitem__(self, key: ItemID, value: Item) -> None:
-        self.inner[key] = value
+class HotbarE(UIElement, Label):
+    position = Vec2(_UI_RIGHT_OFFSET, -5)
+    texture = ["Interact [E".rjust(11)]
+    transparency = " "
+    color = colex.SALMON
 
-    def __contains__(self, key: ItemID) -> bool:
-        return key in self.inner
 
-    def __iter__(self) -> Iterator[ItemID]:
-        return self.inner.__iter__()
+class Hotbar1(UIElement, Label):
+    position = Vec2(_UI_RIGHT_OFFSET, -3)
+    texture = ["Eat [1".rjust(11)]
+    transparency = " "
+    color = colex.SANDY_BROWN
 
-    def get[T](self, key: ItemID, *, default: T) -> Item | T:
-        return self.inner.get(key, default)
 
-    def keys(self) -> dict_keys[ItemID, Item]:
-        return self.inner.keys()
+class Hotbar2(UIElement, Label):
+    position = Vec2(_UI_RIGHT_OFFSET, -2)
+    texture = ["Drink [2".rjust(11)]
+    transparency = " "
+    color = colex.AQUA
 
-    def values(self) -> dict_values[ItemID, Item]:
-        return self.inner.values()
 
-    def items(self) -> dict_items[ItemID, Item]:
-        return self.inner.items()
+class Hotbar3(UIElement, Label):
+    position = Vec2(_UI_RIGHT_OFFSET, -1)
+    texture = ["Heal [3".rjust(11)]
+    transparency = " "
+    color = colex.PINK
 
 
 # TODO: Move sounds to `InfoBar` (and subclasses) using hooks
-class InfoBar(Label):
+class InfoBar(UIElement, Label):
     MAX_VALUE: float = 100
     MAX_CELL_COUNT: int = 10
-    z_index = _UI_Z_INDEX
     label: str = "<Unset>"
     cell_char: str = "#"
     cell_fill: str = " "
     color = colex.ITALIC + colex.WHITE
     _value: float = 0
 
-    def __init__(self) -> None:
+    def __init__(self, parent: Node) -> None:
+        super().__init__(parent=parent)
         self.value = self.MAX_VALUE
 
     @property
@@ -117,27 +124,27 @@ class InfoBar(Label):
 
 class HealthBar(InfoBar):
     MAX_VALUE = 100
-    position = Vec2(_UI_OFFSET, -5)
+    position = Vec2(_UI_LEFT_OFFSET, -5)
     label = "Health"
     color = colex.PALE_VIOLET_RED
 
 
 class OxygenBar(InfoBar):
     MAX_VALUE = 30
-    position = Vec2(_UI_OFFSET, -4)
+    position = Vec2(_UI_LEFT_OFFSET, -4)
     label = "O2"
     color = colex.AQUAMARINE
 
 
 class HungerBar(InfoBar):
     MAX_VALUE = 120
-    position = Vec2(_UI_OFFSET, -3)
+    position = Vec2(_UI_LEFT_OFFSET, -3)
     label = "Food"
     color = colex.SANDY_BROWN
 
 
 class ThirstBar(InfoBar):
     MAX_VALUE = 90
-    position = Vec2(_UI_OFFSET, -2)
+    position = Vec2(_UI_LEFT_OFFSET, -2)
     label = "Thirst"
     color = colex.AQUA

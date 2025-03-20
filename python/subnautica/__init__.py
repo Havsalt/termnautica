@@ -72,25 +72,26 @@ class App(Engine):
         self.dev()
 
     def dev(self) -> None:
-        from .fish import SwordFish
-        from .birds import SmallBird, MediumBird, LargeBird
+        from .fish import SwordFish, Nemo
+        # from .birds import SmallBird, MediumBird, LargeBird
 
         SwordFish(position=Vec2(40, -18))
+        Nemo(position=Vec2(-40, -20))
 
-        for i in range(-10, 10):
-            if random.randint(1, 3) == 1:
-                continue
-            if random.randint(1, 8) == 1:
-                LargeBird().with_global_position(
-                    x=random.randint(0, 5) + i * 15 - 50,
-                    y=random.randint(0, 10) - 20,
-                )
-                continue
-            bird = random.choice([SmallBird, MediumBird])
-            bird().with_global_position(
-                x=random.randint(0, 5) + i * 15 - 50,
-                y=random.randint(0, 10) - 20,
-            )
+        # for i in range(-10, 10):
+        #     if random.randint(1, 3) == 1:
+        #         continue
+        #     if random.randint(1, 8) == 1:
+        #         LargeBird().with_global_position(
+        #             x=random.randint(0, 5) + i * 15 - 50,
+        #             y=random.randint(0, 10) - 20,
+        #         )
+        #         continue
+        #     bird = random.choice([SmallBird, MediumBird])
+        #     bird().with_global_position(
+        #         x=random.randint(0, 5) + i * 15 - 50,
+        #         y=random.randint(0, 10) - 20,
+        #     )
 
         from .buildings.grill import Grill
 
@@ -121,10 +122,10 @@ class App(Engine):
 
         if keyboard.is_pressed("b"):
             if (
-                ItemID.TITANIUM_BAR in self.player.inventory
-                and self.player.inventory[ItemID.TITANIUM_BAR].count >= 3
+                ItemID.TITANIUM_BAR in self.player._inventory
+                and self.player._inventory[ItemID.TITANIUM_BAR] >= 3
             ):
-                self.player.inventory[ItemID.TITANIUM_BAR].count -= 3
+                self.player._inventory[ItemID.TITANIUM_BAR] -= 3
                 Hallway().with_global_position(
                     self.player.global_position + Vec2.RIGHT * 5
                 )

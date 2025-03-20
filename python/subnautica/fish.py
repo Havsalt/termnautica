@@ -8,7 +8,6 @@ from colex import ColorValue
 from charz import Sprite, Vec2, text, clamp, sign
 
 from .props import Collectable, Interactable
-from .tags import Eatable, Drinkable
 from .player import Player
 from .item import ItemID
 from .utils import move_toward
@@ -68,7 +67,7 @@ class FishAI:
         if self.is_submerged():  # Activate AI when in water
             self._action_time_remaining -= 1
             if self._action_time_remaining <= 0:
-                states = tuple(FishState._member_map_.values())  # type: tuple[FishState, ...]  # type: ignore
+                states = tuple(FishState)
                 self._state = (min_time, max_time) = random.choice(states)
                 self._action_time_remaining = random.randint(min_time, max_time)
                 self._direction = Direction.NONE
@@ -85,8 +84,8 @@ class FishAI:
                 self.move(quick=True)
             case FishState.FLOATING:
                 self.position.x += self.speed_x * self._SPEED_SCALE
-            case _ as never:
-                assert_never(never)
+            case _:
+                assert_never(self._state)
 
         # Fall if above ocean top - Gravity
         if self.is_submerged():
@@ -133,38 +132,40 @@ class FishAI:
             self.speed_x = move_toward(self.speed_x, 0, self._FRICTION.x)
 
 
-class BaseFish(FishAI, Interactable, Collectable, Eatable, Sprite):
+class BaseFish(FishAI, Interactable, Collectable, Sprite):
     _SOUND_COLLECT = pygame.mixer.Sound("assets/sounds/collect/fish.wav")
     centered = True
 
 
 class SmallFish(BaseFish):
-    ID = ItemID.GOLD_FISH
-    hunger_value = 5
+    _ITEM = ItemID.GOLD_FISH
     color = colex.DARK_SALMON
     texture = ["<><"]
 
 
 class MediumFish(BaseFish):
-    ID = ItemID.COD
-    hunger_value = 7
+    _ITEM = ItemID.COD
     color = colex.from_hex("#659285")
     texture = ["<[Xx"]
 
 
 class LongFish(BaseFish):
-    ID = ItemID.SALMON
-    hunger_value = 9
+    _ITEM = ItemID.SALMON
     color = colex.SALMON
     texture = ["<º)))))}><"]
 
 
-class WaterFish(Drinkable, BaseFish):
-    ID = ItemID.BLADDER_FISH
-    hunger_value = 2
-    thirst_value = 10
+class WaterFish(BaseFish):
+    _ITEM = ItemID.BLADDER_FISH
     color = colex.LAVENDER
     texture = ["<?))>("]
+
+
+# TODO: Add achievement for this
+class Nemo(BaseFish):
+    _ITEM = ItemID.NEMO
+    color = colex.LIGHT_SALMON
+    texture = ["<)))<"]
 
 
 class SwordFish(FishAI, Sprite):

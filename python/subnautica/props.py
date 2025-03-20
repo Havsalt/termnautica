@@ -5,60 +5,36 @@ Classes defined here will be used as `mixin components`.
 They may also provide methods, either to be overwritten, or as base case.
 """
 
-from typing import Self
+from typing import Protocol, Self
 
 import pygame
 import colex
 from charz import Sprite, Hitbox, Vec2, clamp
 
-from .item import Item, ItemID
+from .item import ItemID, Stat
 from .recipe import Recipe
-from .ui import Inventory
-from .tags import tag_members
 
 
-# NOTE: Add manually when a new tag/mixin is created
-__all__ = [
-    "Collectable",
-    "Interactable",
-    "Building",
-    "Crafter",
-]
+type Count = int
 
 
-type Tag = type | object
+class Interactor(Protocol):
+    def apply_stat_change(self, stat: Stat, change: int) -> None: ...
 
 
 class Collectable:
-    ID: ItemID | None = None
+    _ITEM: ItemID
     _SOUND_COLLECT: pygame.mixer.Sound | None = pygame.mixer.Sound(
         "assets/sounds/collect/default.wav"
     )
 
-    def get_tags(self) -> list[Tag]:
-        tags: list[Tag] = []
-        for base in self.__class__.__mro__:
-            if base.__name__ in __all__:
-                tags.append(base)
-            elif base.__name__ in tag_members:
-                fields = [
-                    getattr(self, member) for member in tag_members[base.__name__]
-                ]
-                instance = base(*fields)
-                tags.append(instance)
-        return tags
+    def collect_into(self, inventory: dict[ItemID, Count]) -> None:
+        assert self._ITEM is not None, f"{self}.name is `None`"
 
-    def collect_into(self, inventory: dict[ItemID, Item]) -> None:
-        assert self.ID is not None, f"{self}.name is `None`"
-
-        if self.ID in inventory:
-            inventory[self.ID].count += 1
-        else:  # Insert new item with count of 1
-            inventory[self.ID] = Item(
-                self.ID,
-                1,
-                self.get_tags(),
-            )
+        if self._ITEM in inventory:
+            inventory[self._ITEM] += 1
+        else:
+            inventory[self._ITEM] = 1
 
         if self._SOUND_COLLECT is not None:
             self._SOUND_COLLECT.play()
@@ -110,6 +86,7 @@ class Building:
     _OPEN_CEILING: bool = False
 
     def on_exit(self) -> None: ...  # Triggered when actor (`Player`) exits the building
+
     def move_and_collide_inside(self, node: Sprite, velocity: Vec2) -> None:
         assert isinstance(self, Sprite)
         if self._BOUNDARY is None:
@@ -137,31 +114,48 @@ class Building:
 class Crafter:
     _RECIPES: list[Recipe] = []  # NOTE: Order matter
 
-    def can_craft(self, recipe: Recipe, inventory: Inventory) -> bool:
+    def can_craft(self, recipe: Recipe, inventory: dict[ItemID, Count]) -> bool:
         return all(
-            inventory.get(idgredient, default=Item(ItemID.NONE, 0)).count >= count
-            for idgredient, count in recipe.idgredients.items()
+            inventory.get(idgredient, 0) > idgredient_cost
+            for idgredient, idgredient_cost in recipe.idgredients.items()
         )
 
-    def consume_idgredients(self, recipe: Recipe, inventory: Inventory) -> None:
-        for idgredient, count in recipe.idgredients.items():
-            inventory[idgredient].count -= count
+    def consume_idgredients(
+        self,
+        recipe: Recipe,
+        inventory: dict[ItemID, Count],
+    ) -> None:
+        for idgredient, idgredient_cost in recipe.idgredients.items():
+            if idgredient not in inventory:
+                raise KeyError(
+                    f"Attempted removing {idgredient_cost}x{idgredient},"
+                    f" but {idgredient} is not found in {inventory}"
+                )
+            inventory[idgredient] -= idgredient_cost
 
-    def add_product(self, recipe: Recipe, inventory: Inventory) -> None:
-        if recipe.product.id not in inventory:
-            inventory[recipe.product.id] = Item(
-                recipe.product.id,
-                count=0,
-                tags=recipe.product.tags,
-            )
-        inventory[recipe.product.id].count += recipe.product.count
+    def add_product(
+        self,
+        recipe: Recipe,
+        inventory: dict[ItemID, Count],
+    ) -> None:
+        for product, production_count in recipe.products.items():
+            if product in inventory:
+                inventory[product] += production_count
+            else:
+                inventory[product] = production_count
 
-    def craft(self, recipe: Recipe, inventory: Inventory) -> None:
+    def craft(
+        self,
+        recipe: Recipe,
+        inventory: dict[ItemID, Count],
+    ) -> None:
         self.consume_idgredients(recipe, inventory)
         self.add_product(recipe, inventory)
 
-    # TODO: Generalize inventory annotation
-    def craft_each_if_possible(self, inventory: Inventory) -> None:
+    def craft_each_if_possible(
+        self,
+        inventory: dict[ItemID, Count],
+    ) -> None:
         for recipe in self._RECIPES:
             if self.can_craft(recipe, inventory):
                 self.craft(recipe, inventory)

@@ -98,8 +98,8 @@ class Spawner[T: Sprite](Sprite):
                     self.init_spawned(instance)
                     self._spawned_instances.append(instance)
 
-            case _ as never:
-                assert_never(never)
+            case _:
+                assert_never(self._SPAWN_MODE)
 
     def init_spawned(self, instance: T) -> None: ...
 

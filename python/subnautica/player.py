@@ -1,17 +1,20 @@
+from typing import Iterable  # noqa: F401
+from typing import assert_never
+
 import colex
 import keyboard
 import pygame
-from charz import Camera, Sprite, Label, Collider, Hitbox, Vec2
+from charz import Camera, Sprite, Collider, Hitbox, Vec2
 
 from . import ui, ocean
 from .props import Collectable, Interactable, Building
-from .tags import Eatable, Drinkable, Healing
 from .particles import Bubble, Blood
-from .item import ItemID
+from .item import ItemID, Stat, stats
 from .utils import move_toward
 
 
 type Action = str | int
+type Count = int
 
 
 class Player(Collider, Sprite):
@@ -50,44 +53,23 @@ class Player(Collider, Sprite):
     _current_interactable: Sprite | None = None
 
     def __init__(self) -> None:
+        self._inventory = dict[ItemID, Count]()
         # NOTE: Current `Camera` has to be initialized before `Player.__init__` is called
-        self.inventory = ui.Inventory(
-            {
-                ItemID.WATER_BOTTLE: (2, [Drinkable(20)]),
-            }
-        ).with_parent(Camera.current)
-        self._health_bar = ui.HealthBar().with_parent(Camera.current)
-        self._oxygen_bar = ui.OxygenBar().with_parent(Camera.current)
-        self._hunger_bar = ui.HungerBar().with_parent(Camera.current)
-        self._thirst_bar = ui.ThirstBar().with_parent(Camera.current)
-        self._hotbar1 = Label(
-            self,
-            text="Interact [E".rjust(11),
-            transparency=" ",
-            color=colex.SALMON,
-            position=Vec2(40, -5),
-        )
-        self._hotbar2 = Label(
-            self,
-            text="Eat [1".rjust(11),
-            transparency=" ",
-            color=colex.SANDY_BROWN,
-            position=Vec2(40, -3),
-        )
-        self._hotbar3 = Label(
-            self,
-            text="Drink [2".rjust(11),
-            transparency=" ",
-            color=colex.AQUA,
-            position=Vec2(40, -2),
-        )
-        self._hotbar3 = Label(
-            self,
-            text="Heal [3".rjust(11),
-            transparency=" ",
-            color=colex.PINK,
-            position=Vec2(40, -1),
-        )
+        self._health_bar = ui.HealthBar(Camera.current)
+        self._oxygen_bar = ui.OxygenBar(Camera.current)
+        self._hunger_bar = ui.HungerBar(Camera.current)
+        self._thirst_bar = ui.ThirstBar(Camera.current)
+        ui.Inventory(Camera.current, inventory_ref=self._inventory)
+        ui.HotbarE(Camera.current)
+        ui.Hotbar1(Camera.current)
+        ui.Hotbar2(Camera.current)
+        ui.Hotbar3(Camera.current)
+        # DEV
+        self._inventory[ItemID.WATER_BOTTLE] = 2
+        self._thirst_bar.value = 50
+        self._inventory[ItemID.FRIED_FISH_NUGGET] = 2
+        self._hunger_bar.value = 50
+        self._inventory[ItemID.COD_SOUP] = 2
 
     def update(self, _delta: float) -> None:
         # Order of tasks
@@ -100,82 +82,67 @@ class Player(Collider, Sprite):
         self.handle_hunger()
         self.handle_thirst()
         # NOTE: Order of drinking, eating and healing is not visually correct
-        self.handle_drinking()
         self.handle_eating()
+        self.handle_drinking()
         self.handle_healing()
         # Check if dead
         if self._health_bar.value == 0:
             self.on_death()
 
+    def consume_item(self, item: ItemID, count: Count = 1) -> None:
+        if item not in self._inventory:
+            raise KeyError(
+                f"Attempted removing {count} {item.name},"
+                f" but {item.name} is not found in {self._inventory}"
+            )
+        elif count > self._inventory[item]:
+            raise ValueError(
+                f"Attempted to remove {count} {item.name},"
+                f" but only has {self._inventory[item]} in {self._inventory}"
+            )
+        self._inventory[item] -= count
+
+        for stat in Stat:
+            if stat not in stats[item]:
+                continue
+
+            change = stats[item][stat]
+            match stat:
+                case Stat.EATABLE:
+                    self._hunger_bar.value += change
+                case Stat.DRINKABLE:
+                    self._thirst_bar.value += change
+                case Stat.HEALING:
+                    self._health_bar.value += change
+                case _:
+                    assert_never(stat)
+
     def handle_eating(self) -> None:
         if not (self._current_action == "1" and self._key_just_pressed):
             return
 
-        found_eatable = False
-        for item in self.inventory.values():
-            if item.count < 1:
-                continue
-
-            for tag in item.tags:
-                if not isinstance(tag, Eatable):
-                    continue
-                # Is `Eatable`
-                item.count -= 1
-                self._hunger_bar.value += tag.hunger_value
-                # Check if also `Drinkable`
-                for tag2 in item.tags:
-                    if isinstance(tag2, Drinkable):
-                        self._thirst_bar.value += tag2.thirst_value
-                found_eatable = True
-                break
-            if found_eatable:
+        for item in self._inventory:
+            if item in stats and Stat.EATABLE in stats[item]:
+                self.consume_item(item)
                 break
 
-    # TODO: Check for drinking, eating and healing at the same time
     def handle_drinking(self) -> None:
         if not (self._current_action == "2" and self._key_just_pressed):
             return
 
-        found_drinkable = False
-        for item in self.inventory.values():
-            if item.count < 1:
-                continue
+        for item in self._inventory:
+            if item in stats and Stat.DRINKABLE in stats[item]:
+                self.consume_item(item)
+                break
 
-            for tag in item.tags:
-                if not isinstance(tag, Drinkable):
-                    continue
-                # Is `Drinkable`
-                item.count -= 1
-                self._thirst_bar.value += tag.thirst_value
-                # Check if also `Eatable`
-                for tag2 in item.tags:
-                    if isinstance(tag2, Eatable):
-                        self._hunger_bar.value += tag2.hunger_value
-                found_drinkable = True
-                break
-            if found_drinkable:
-                break
-    
     def handle_healing(self) -> None:
         if not (self._current_action == "3" and self._key_just_pressed):
             return
-        
-        found_healing = False
-        for item in self.inventory.values():
-            if item.count < 1:
-                continue
 
-            for tag in item.tags:
-                if not isinstance(tag, Healing):
-                    continue
-                # Is `Healing`
-                item.count -= 1
-                self._health_bar.value += tag.heal_value
-                found_healing = True
+        for item in self._inventory:
+            if item in stats and Stat.HEALING in stats[item]:
+                self.consume_item(item)
                 break
-            if found_healing:
-                break
-
 
     def is_submerged(self) -> bool:
         self_height = self.global_position.y - self.texture_size.y / 2
@@ -367,7 +334,7 @@ class Player(Collider, Sprite):
         # Collect collectable that is selected
         # `self._curr_interactable` is already in reach
         if self._current_action == "e" and self._key_just_pressed:
-            self._current_interactable.collect_into(self.inventory.inner)
+            self._current_interactable.collect_into(self._inventory)
             self._current_interactable.queue_free()
             self._current_interactable = None
 

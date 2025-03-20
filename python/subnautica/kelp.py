@@ -6,7 +6,7 @@ from .item import ItemID
 
 
 class Kelp(Interactable, Collectable, AnimatedSprite):
-    ID = ItemID.KELP
+    _ITEM = ItemID.KELP
     color = colex.SEA_GREEN
     transparency = " "
     animations = AnimationSet(

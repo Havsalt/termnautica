@@ -14,24 +14,24 @@ class Ore(Interactable, Collectable, Sprite):
 
 
 class Gold(Ore):
-    ID = ItemID.GOLD_ORE
+    _ITEM = ItemID.GOLD_ORE
     color = colex.GOLDENROD
     texture = ["▓▒▓"]
 
 
 class Titanium(Ore):
-    ID = ItemID.TITANIUM_ORE
+    _ITEM = ItemID.TITANIUM_ORE
     color = colex.from_hex("#797982")
     texture = ["▒░▒"]
 
 
 class Copper(Ore):
-    ID = ItemID.COPPER_ORE
+    _ITEM = ItemID.COPPER_ORE
     color = colex.from_hex("#B87333")
     texture = ["▒▓▒"]
 
 
 class Coal(Ore):
-    ID = ItemID.COAL_ORE
+    _ITEM = ItemID.COAL_ORE
     color = colex.BLACK
     texture = ["▒▓▒"]
