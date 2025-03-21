@@ -2,8 +2,7 @@ import colex
 from charz import Sprite
 
 from ..player import Player
-from ..item import ItemID
-from ..recipe import Recipe
+from ..item import ItemID, Recipe
 from ..props import Interactable, Crafter
 
 

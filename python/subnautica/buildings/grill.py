@@ -4,8 +4,7 @@ from charz import Sprite, Vec2
 from ..player import Player
 from ..particles import Fire
 from ..props import Crafter, Interactable
-from ..recipe import Recipe
-from ..item import ItemID
+from ..item import ItemID, Recipe
 
 
 class Grill(Interactable, Crafter, Sprite):

@@ -11,15 +11,10 @@ import pygame
 import colex
 from charz import Sprite, Hitbox, Vec2, clamp
 
-from .item import ItemID, Stat
-from .recipe import Recipe
+from .item import ItemID, Recipe, Stat
 
 
 type Count = int
-
-
-class Interactor(Protocol):
-    def apply_stat_change(self, stat: Stat, change: int) -> None: ...
 
 
 class Collectable:

@@ -7,7 +7,7 @@ import pygame
 import colex
 from charz import Node, Sprite, Label, Vec2, text, clamp
 
-from .item import ItemID
+from .item import ItemID, Recipe
 
 
 type Count = int
@@ -15,10 +15,11 @@ type Count = int
 
 _UI_LEFT_OFFSET: int = -50
 _UI_RIGHT_OFFSET: int = 40
+_UI_CHANNEL = pygame.mixer.Channel(0)
 
 
-class UIElement:
-    z_index = 5
+class UIElement:  # NOTE: Have this be the first mixin in mro
+    z_index = 5  # Global UI z-index
 
 
 class Inventory(UIElement, Sprite):
@@ -142,13 +143,6 @@ class InfoBar(UIElement, Label):
         self.on_change(change, cells_changed)
 
     def on_change(self, change: float, cells_changed: int, /) -> None: ...
-
-
-# _SOUND_HURT = pygame.mixer.Sound("assets/sounds/hurt.wav")
-# _DROWN_SOUND = pygame.mixer.Sound("assets/sounds/bubble.wav")
-# _BREATH_SOUND = pygame.mixer.Sound("assets/sounds/breath.wav")
-
-_UI_CHANNEL = pygame.mixer.Channel(0)
 
 
 class HealthBar(InfoBar):

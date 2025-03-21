@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from enum import Enum, auto, unique
 
 
 type Count = int
+
+
+@dataclass
+class Recipe:
+    products: dict[ItemID, Count]
+    idgredients: dict[ItemID, Count]
 
 
 @unique
