@@ -133,7 +133,7 @@ class Crafter:
                 )
             inventory[idgredient] -= idgredient_cost
 
-    def add_product(
+    def add_products(
         self,
         recipe: Recipe,
         inventory: dict[ItemID, Count],
@@ -150,7 +150,7 @@ class Crafter:
         inventory: dict[ItemID, Count],
     ) -> None:
         self.consume_idgredients(recipe, inventory)
-        self.add_product(recipe, inventory)
+        self.add_products(recipe, inventory)
 
     def craft_each_if_possible(
         self,

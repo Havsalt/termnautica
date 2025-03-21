@@ -1,9 +1,7 @@
-from typing import Iterable  # noqa: F401
 from typing import assert_never
 
 import colex
 import keyboard
-import pygame
 from charz import Camera, Sprite, Collider, Hitbox, Vec2
 
 from . import ui, ocean
@@ -23,12 +21,6 @@ class Player(Collider, Sprite):
     _AIR_FRICTION: float = 0.7
     _WATER_FRICTION: float = 0.3
     _MAX_SPEED: Vec2 = Vec2(2, 2)
-    _HURT_SOUND = pygame.mixer.Sound("assets/sounds/hurt.wav")
-    _HURT_CHANNEL = pygame.mixer.Channel(0)
-    _DROWN_SOUND = pygame.mixer.Sound("assets/sounds/bubble.wav")
-    _BREATH_SOUND = pygame.mixer.Sound("assets/sounds/breath.wav")
-    # DEV
-    # _DROWN_SOUND.set_volume(0)
     _ACTIONS: tuple[Action, ...] = (  # Order is also precedence - First is highest
         "e",
         "1",
@@ -70,6 +62,8 @@ class Player(Collider, Sprite):
         self._inventory[ItemID.FRIED_FISH_NUGGET] = 2
         self._hunger_bar.value = 50
         self._inventory[ItemID.COD_SOUP] = 2
+        self._inventory[ItemID.BANDAGE] = 2
+        self._health_bar.value = 20
 
     def update(self, _delta: float) -> None:
         # Order of tasks
@@ -241,14 +235,11 @@ class Player(Collider, Sprite):
         # Restore oxygen if above ocean waves
         if not self.is_submerged():
             if self._oxygen_bar.value != self._oxygen_bar.MAX_VALUE:
-                self._BREATH_SOUND.play()
                 self._oxygen_bar.fill()
             return
         # Decrease health if no oxygen, and spawn particles each tick
         if self._oxygen_bar.value == 0:
             self._health_bar.value -= 1
-            if not self._HURT_CHANNEL.get_busy():
-                self._HURT_CHANNEL.play(self._HURT_SOUND)
             Blood().with_global_position(
                 x=self.global_position.x - 1,
                 y=self.global_position.y - 1,
@@ -264,7 +255,6 @@ class Player(Collider, Sprite):
                 x=self.global_position.x,
                 y=self.global_position.y - 1,
             )
-            self._DROWN_SOUND.play()
 
     def handle_hunger(self) -> None:
         self._hunger_bar.value -= 1 / 16

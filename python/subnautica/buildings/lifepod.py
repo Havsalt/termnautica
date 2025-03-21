@@ -17,7 +17,7 @@ class Ladder(Interactable, Sprite):
     centered = True
     texture = load_texture("lifepod/ladder.txt")
 
-    def on_interact(self, interactor: Player) -> None:
+    def on_interact(self, _interactor: Sprite) -> None:
         assert isinstance(self.parent, Lifepod)
         self.parent.on_exit()
 
@@ -58,7 +58,11 @@ class Lifepod(Interactable, Building, Sprite):
             texture=["", Smelter.texture[1]],
         )
 
-    def on_interact(self, interactor: Player) -> None:
+    def on_interact(self, interactor: Sprite) -> None:
+        assert isinstance(
+            interactor,
+            Player,
+        ), "Only `Player` can interact with `Lifepod`"
         # Reparent without moving
         location = interactor.global_position
         interactor.parent = self

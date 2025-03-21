@@ -37,6 +37,8 @@ class ItemID(Enum):
     WATER_BOTTLE = auto()
     BANDAGE = auto()
     MEDKIT = auto()
+    CHOCOLATE = auto()
+    FABRIC = auto()
 
 
 stats: dict[ItemID, dict[Stat, int]] = {
@@ -74,5 +76,9 @@ stats: dict[ItemID, dict[Stat, int]] = {
     },
     ItemID.MEDKIT: {
         Stat.HEALING: 70,
+    },
+    ItemID.CHOCOLATE: {
+        Stat.HEALING: 18,
+        Stat.EATABLE: 23,
     },
 }

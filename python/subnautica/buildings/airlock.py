@@ -11,7 +11,11 @@ class Airlock(Interactable, Collider, Sprite):
     texture = load_texture("airlock/closed.txt")
     disabled: bool = False
 
-    def on_interact(self, interactor: Player) -> None:
+    def on_interact(self, interactor: Sprite) -> None:
+        assert isinstance(
+            interactor,
+            Player,
+        ), "Only `Player` can interact with `Airlock`"
         self.disabled = not self.disabled
         # TEMP FIX:
         interactor.disabled = self.disabled

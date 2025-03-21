@@ -32,6 +32,7 @@ class Copper(Ore):
 
 
 class Coal(Ore):
+    _SOUND_COLLECT = pygame.mixer.Sound("assets/sounds/collect/coal.wav")
     _ITEM = ItemID.COAL_ORE
     color = colex.BLACK
     texture = ["▒▓▒"]
