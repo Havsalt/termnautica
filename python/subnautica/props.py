@@ -116,7 +116,7 @@ class Crafter:
 
     def can_craft(self, recipe: Recipe, inventory: dict[ItemID, Count]) -> bool:
         return all(
-            inventory.get(idgredient, 0) > idgredient_cost
+            inventory.get(idgredient, 0) >= idgredient_cost
             for idgredient, idgredient_cost in recipe.idgredients.items()
         )
 
