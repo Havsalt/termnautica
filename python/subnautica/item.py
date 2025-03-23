@@ -7,7 +7,7 @@ from enum import Enum, auto, unique
 type Count = int
 
 
-@dataclass
+@dataclass(kw_only=True, frozen=True, slots=True)
 class Recipe:
     products: dict[ItemID, Count]
     idgredients: dict[ItemID, Count]
