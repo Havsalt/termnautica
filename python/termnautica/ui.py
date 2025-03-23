@@ -170,6 +170,7 @@ class OxygenBar(InfoBar):
     _SOUND_BREATHE = pygame.mixer.Sound("assets/sounds/ui/oxygen/breathe.wav")
     _SOUND_BUBBLE = pygame.mixer.Sound("assets/sounds/ui/oxygen/bubble.wav")
     _CHANNEL_BREATH = pygame.mixer.Channel(2)
+    _CHANNEL_BUBBLE = pygame.mixer.Channel(2)
     _LABEL = "O2"
     position = Vec2(_UI_LEFT_OFFSET, -4)
     color = colex.AQUAMARINE
@@ -177,8 +178,8 @@ class OxygenBar(InfoBar):
     def on_change(self, change: float, cells_changed: int) -> None:
         if change > 0 and not self._CHANNEL_BREATH.get_busy():
             self._CHANNEL_BREATH.play(self._SOUND_BREATHE)
-        if cells_changed:
-            self._CHANNEL_BREATH.play(self._SOUND_BUBBLE)
+        if cells_changed and not self._CHANNEL_BUBBLE.get_busy():
+            self._CHANNEL_BUBBLE.play(self._SOUND_BUBBLE)
 
 
 class HungerBar(InfoBar):
