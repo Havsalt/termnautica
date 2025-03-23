@@ -121,14 +121,33 @@ def attempt_generate_spawner_at(location: Vec2) -> None:
 def generate_floor():
     depth = 0
     vec_points: list[Vec2] = []
+    abyss_length_left = 10
+    abyss_just_now = False
+    abyss_just_was = False
     for x_position in range(-WIDTH // 2, WIDTH // 2):
+        if abyss_length_left <= 0 and random.randint(1, 100) < 4:
+            abyss_just_now = True
+            abyss_length_left = random.randint(15, 20)
         depth += randf(-1, 1)
         point = Vec2i(
             x_position,
-            int(depth) + Floor.REST_DEPTH,
+            int(depth) + Floor.REST_DEPTH + (20 if abyss_length_left > 0 else 0),
         )
+        abyss_length_left -= 1
+        if abyss_length_left == 0:
+            abyss_just_was = True
         # Temp point - For deciding texture
         vec_points.append(point)
+        if abyss_just_now or abyss_just_was:
+            abyss_just_was = False
+            abyss_just_now = False
+            for i in range(20):
+                abyss_point = Vec2i(
+                    x_position,
+                    int(depth) + Floor.REST_DEPTH + i,
+                )
+                Floor.points.add(abyss_point.to_tuple())
+                vec_points.append(abyss_point)
         # Store point over time - Used for collision
         Floor.points.add(point.to_tuple())
 
