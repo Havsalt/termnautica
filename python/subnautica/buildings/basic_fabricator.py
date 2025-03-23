@@ -31,9 +31,7 @@ class BasicFabricator(Fabrication, Interactable, Sprite):
             },
         ),
         Recipe(
-            products={
-                ItemID.CHOCOLATE: 2,
-            },
+            products={ItemID.CHOCOLATE: 2},
             idgredients={
                 ItemID.KELP: 2,
                 ItemID.COAL_ORE: 1,

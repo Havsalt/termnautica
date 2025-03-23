@@ -1,7 +1,6 @@
 import colex
 from charz import Sprite, Vec2
 
-from ..player import Player
 from ..item import ItemID, Recipe
 from ..props import Interactable
 from ..fabrication import Fabrication
