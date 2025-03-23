@@ -46,6 +46,7 @@ class ItemID(Enum):
     MEDKIT = auto()
     CHOCOLATE = auto()
     FABRIC = auto()
+    STRING = auto()
 
 
 stats: dict[ItemID, dict[Stat, int]] = {

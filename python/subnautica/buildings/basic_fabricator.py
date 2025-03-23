@@ -11,6 +11,19 @@ class BasicFabricator(Fabrication, Interactable, Sprite):
     _REACH_FRACTION = 1
     _RECIPES = [
         Recipe(
+            products={ItemID.FABRIC: 1},
+            idgredients={
+                ItemID.KELP: 1,
+            },
+        ),
+        Recipe(
+            products={ItemID.STRING: 2},
+            idgredients={
+                ItemID.KELP: 1,
+                ItemID.FABRIC: 1,
+            },
+        ),
+        Recipe(
             products={ItemID.WATER_BOTTLE: 1},
             idgredients={
                 ItemID.BLADDER_FISH: 1,
@@ -19,8 +32,7 @@ class BasicFabricator(Fabrication, Interactable, Sprite):
         ),
         Recipe(
             products={
-                ItemID.CHOCOLATE: 3,
-                ItemID.TITANIUM_BAR: 1,
+                ItemID.CHOCOLATE: 2,
             },
             idgredients={
                 ItemID.KELP: 2,
@@ -30,18 +42,22 @@ class BasicFabricator(Fabrication, Interactable, Sprite):
         Recipe(
             products={ItemID.MEDKIT: 1},
             idgredients={
-                ItemID.KELP: 6,
+                ItemID.KELP: 2,
+                ItemID.STRING: 1,
+                ItemID.FABRIC: 4,
                 ItemID.GOLD_ORE: 1,
             },
         ),
         Recipe(
             products={ItemID.BANDAGE: 1},
-            idgredients={ItemID.KELP: 4},
+            idgredients={
+                ItemID.FABRIC: 2,
+                ItemID.STRING: 1,
+            },
         ),
     ]
     centered = True
     color = colex.MEDIUM_AQUAMARINE
-    transparency = " "
     texture = [
         "__..__",
         ":    :",

@@ -62,13 +62,13 @@ class Player(Collider, Sprite):
         ui.Hotbar3(Camera.current)
         self.crafting_gui = ui.Crafting(Camera.current)
         # DEV
-        self.inventory[ItemID.WATER_BOTTLE] = 2
-        self._thirst_bar.value = 50
-        self.inventory[ItemID.FRIED_FISH_NUGGET] = 2
-        self._hunger_bar.value = 50
-        self.inventory[ItemID.COD_SOUP] = 2
-        self.inventory[ItemID.BANDAGE] = 2
-        self._health_bar.value = 20
+        # self.inventory[ItemID.WATER_BOTTLE] = 2
+        # self._thirst_bar.value = 50
+        # self.inventory[ItemID.FRIED_FISH_NUGGET] = 2
+        # self._hunger_bar.value = 50
+        # self.inventory[ItemID.COD_SOUP] = 2
+        # self.inventory[ItemID.BANDAGE] = 2
+        # self._health_bar.value = 20
 
     def update(self, _delta: float) -> None:
         # Order of tasks
