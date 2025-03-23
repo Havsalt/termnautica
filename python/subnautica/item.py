@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from enum import Enum, auto, unique
 
 
-type Count = int
+type Count = int  # Positive
+type Change = int
 
 
 @dataclass(kw_only=True, frozen=True, slots=True)
@@ -49,7 +50,7 @@ class ItemID(Enum):
     STRING = auto()
 
 
-stats: dict[ItemID, dict[Stat, int]] = {
+stats: dict[ItemID, dict[Stat, Change]] = {
     ItemID.BLADDER_FISH: {
         Stat.EATABLE: 16,
         Stat.DRINKABLE: 20,
