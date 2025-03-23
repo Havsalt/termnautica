@@ -36,6 +36,7 @@ class Player(Collider, Sprite):
         "3",
         "space",
         "tab",
+        "enter",
         "j",
         "k",
     )
@@ -346,7 +347,9 @@ class Player(Collider, Sprite):
             return
         assert isinstance(self._current_interactable, Interactable)
         # Trigger interaction function
-        if self._current_action == "e" and self._key_just_pressed:
+        if self._key_just_pressed and (
+            self._current_action == "e" or self._current_action == "enter"
+        ):
             # TODO: Check for z_index change, so that it respects z_index change in on_interact
             self._current_interactable.on_interact(self)
 
@@ -356,8 +359,10 @@ class Player(Collider, Sprite):
         if not isinstance(self._current_interactable, Collectable):
             return
         # Collect collectable that is selected
-        # `self._curr_interactable` is already in reach
-        if self._current_action == "e" and self._key_just_pressed:
+        # `self._current_interactable` is already in reach
+        if self._key_just_pressed and (
+            self._current_action == "e" or self._current_action == "enter"
+        ):
             self._current_interactable.collect_into(self.inventory)
             self._current_interactable.queue_free()
             self._current_interactable = None
