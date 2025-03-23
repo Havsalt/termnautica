@@ -1,3 +1,4 @@
+from math import floor
 from typing import assert_never
 
 import colex
@@ -171,8 +172,8 @@ class Player(Collider, Sprite):
         for x_offset in range(int(self.texture_size.x)):
             for y_offset in range(int(self.texture_size.y)):
                 global_point = (
-                    int(center.x + x_offset),
-                    int(center.y + y_offset),
+                    floor(center.x + x_offset),
+                    floor(center.y + y_offset),
                 )
                 if global_point in ocean.Floor.points:
                     return True
