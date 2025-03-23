@@ -1,0 +1,12 @@
+**
+!src
+!assets
+!python
+!pyproject.toml
+!.python-version
+!requirements.lock
+!requirements-dev.lock
+!Cargo.toml
+!Cargo.lock
+!README.md
+
