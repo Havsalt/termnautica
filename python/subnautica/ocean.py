@@ -1,5 +1,5 @@
 import random
-from math import sin, pi as PI
+from math import sin, floor, pi as PI
 from typing import Self, ClassVar
 
 import colex
@@ -91,7 +91,7 @@ class Water(Sprite):
 
     def update(self, _delta: float) -> None:
         # Asin(cx + phi) + d
-        self.position.y = int(
+        self.position.y = floor(
             self.wave_height_at(self._rest_location.x) + self._rest_location.y
         )
 
