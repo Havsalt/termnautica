@@ -65,7 +65,7 @@ stats: dict[ItemID, dict[Stat, int]] = {
     },
     ItemID.COD_SOUP: {
         Stat.EATABLE: 24,
-        Stat.DRINKABLE: 25,
+        Stat.DRINKABLE: 41,
     },
     ItemID.SALMON: {
         Stat.EATABLE: 17,
