@@ -16,6 +16,10 @@ type Action = str | int
 type Count = int
 
 
+ARROW_UP: int = 72
+ARROW_DOWN: int = 80
+
+
 class Player(Collider, Sprite):
     _GRAVITY: float = 0.91
     _JUMP_STRENGTH: float = 4
@@ -23,6 +27,8 @@ class Player(Collider, Sprite):
     _WATER_FRICTION: float = 0.3
     _MAX_SPEED: Vec2 = Vec2(2, 2)
     _ACTIONS: tuple[Action, ...] = (  # Order is also precedence - First is highest
+        ARROW_UP,  # NOTE: These 2 constants has to be checked before numeric strings
+        ARROW_DOWN,
         "e",
         "1",
         "2",
@@ -192,12 +198,16 @@ class Player(Collider, Sprite):
             return
         if not isinstance(self._current_interactable, Fabrication):
             return
-        if self._current_action == "j" or (
-            self._current_action == "tab" and not keyboard.is_pressed("shift")
+        if (
+            self._current_action == "j"
+            or self._current_action == ARROW_DOWN
+            or (self._current_action == "tab" and not keyboard.is_pressed("shift"))
         ):
             self._current_interactable.attempt_select_next_recipe()
-        elif self._current_action == "k" or (
-            self._current_action == "tab" and keyboard.is_pressed("shift")
+        elif (
+            self._current_action == "k"
+            or self._current_action == ARROW_UP
+            or (self._current_action == "tab" and keyboard.is_pressed("shift"))
         ):
             self._current_interactable.attempt_select_previous_recipe()
 
