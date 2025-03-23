@@ -91,7 +91,7 @@ class Water(Sprite):
 
     def update(self, _delta: float) -> None:
         # Asin(cx + phi) + d
-        self.position.y = (
+        self.position.y = int(
             self.wave_height_at(self._rest_location.x) + self._rest_location.y
         )
 
