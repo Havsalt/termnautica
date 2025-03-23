@@ -5,13 +5,13 @@ Classes defined here will be used as `mixin components`.
 They may also provide methods, either to be overwritten, or as base case.
 """
 
-from typing import Protocol, Self
+from typing import Self
 
 import pygame
 import colex
 from charz import Sprite, Hitbox, Vec2, clamp
 
-from .item import ItemID, Recipe, Stat
+from .item import ItemID, Recipe
 
 
 type Count = int
@@ -72,7 +72,13 @@ class Interactable:
         dist_squared = relative.length_squared()
         return (dist_squared <= self._REACH * self._REACH, dist_squared)
 
-    def on_interact(self, interactor: Sprite) -> None: ...
+    def on_interact(self, actor: Sprite) -> None: ...
+
+    # NOTE: May be triggered each frame if selected by `Player`
+    def when_selected(self, actor: Sprite) -> None: ...
+
+    # NOTE: Only triggered one time
+    def on_deselect(self, actor: Sprite) -> None: ...
 
 
 class Building:
@@ -106,7 +112,7 @@ class Building:
         node.position.x = clamp(node.position.x + velocity.x, start.x, end.x)
 
 
-class Crafter:
+class Crafting:
     _RECIPES: list[Recipe] = []  # NOTE: Order matter
 
     def can_craft(self, recipe: Recipe, inventory: dict[ItemID, Count]) -> bool:
@@ -147,10 +153,10 @@ class Crafter:
         self.consume_idgredients(recipe, inventory)
         self.add_products(recipe, inventory)
 
-    def craft_each_if_possible(
-        self,
-        inventory: dict[ItemID, Count],
-    ) -> None:
-        for recipe in self._RECIPES:
-            if self.can_craft(recipe, inventory):
-                self.craft(recipe, inventory)
+    # def craft_each_if_possible(
+    #     self,
+    #     inventory: dict[ItemID, Count],
+    # ) -> None:
+    #     for recipe in self._RECIPES:
+    #         if self.can_craft(recipe, inventory):
+    #             self.craft(recipe, inventory)

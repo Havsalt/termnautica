@@ -75,7 +75,7 @@ class App(Engine):
         from .fish import SwordFish, Nemo
         # from .birds import SmallBird, MediumBird, LargeBird
 
-        SwordFish(position=Vec2(40, -18))
+        SwordFish(position=Vec2(80, -18))
         Nemo(position=Vec2(-40, -20))
 
         # for i in range(-10, 10):
@@ -122,10 +122,10 @@ class App(Engine):
 
         if keyboard.is_pressed("b"):
             if (
-                ItemID.TITANIUM_BAR in self.player._inventory
-                and self.player._inventory[ItemID.TITANIUM_BAR] >= 3
+                ItemID.TITANIUM_BAR in self.player.inventory
+                and self.player.inventory[ItemID.TITANIUM_BAR] >= 3
             ):
-                self.player._inventory[ItemID.TITANIUM_BAR] -= 3
+                self.player.inventory[ItemID.TITANIUM_BAR] -= 3
                 Hallway().with_global_position(
                     self.player.global_position + Vec2.RIGHT * 5
                 )

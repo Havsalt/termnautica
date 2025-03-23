@@ -1,13 +1,13 @@
 import colex
 from charz import Sprite, Vec2
 
-from ..player import Player
 from ..particles import Fire
-from ..props import Crafter, Interactable
+from ..props import Interactable
+from ..fabrication import Fabrication
 from ..item import ItemID, Recipe
 
 
-class Grill(Interactable, Crafter, Sprite):
+class Grill(Fabrication, Interactable, Sprite):
     _FIRE_OFFSET: Vec2 = Vec2(1, 0)
     _FIRE_EMMIT_INTERVAL: int = 8
     _RECIPES = [
@@ -39,13 +39,6 @@ class Grill(Interactable, Crafter, Sprite):
         "\\ /",
     ]
     _time_since_emmit: int = 0
-
-    def on_interact(self, interactor: Sprite) -> None:
-        assert isinstance(
-            interactor,
-            Player,
-        ), "Only `Player` can interact with `Smelter`"
-        self.craft_each_if_possible(interactor._inventory)
 
     def update(self, _delta: float) -> None:
         self._time_since_emmit -= 1

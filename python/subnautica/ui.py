@@ -5,12 +5,15 @@ from typing import MutableMapping
 
 import pygame
 import colex
+from colex import ColorValue
 from charz import Node, Sprite, Label, Vec2, text, clamp
 
 from .item import ItemID, Recipe
 
 
 type Count = int
+type Craftable = bool
+type IdgredientCount = int
 
 
 _UI_LEFT_OFFSET: int = -50
@@ -18,6 +21,7 @@ _UI_RIGHT_OFFSET: int = 40
 _UI_CHANNEL = pygame.mixer.Channel(0)
 
 
+# TODO: Render `UIElement` on top of screen buffer (Would be nice with `FrameTask`)
 class UIElement:  # NOTE: Have this be the first mixin in mro
     z_index = 5  # Global UI z-index
 
@@ -189,3 +193,138 @@ class ThirstBar(InfoBar):
     _LABEL = "Thirst"
     position = Vec2(_UI_LEFT_OFFSET, -2)
     color = colex.AQUA
+
+
+class Panel(Sprite):
+    _width: int = 12
+    _height: int = 6
+    fill_char: str = " "
+
+    @property
+    def width(self) -> int:
+        return self._width
+
+    @width.setter
+    def width(self, value: int) -> None:
+        self._width = value
+        self._resize()
+
+    @property
+    def height(self) -> int:
+        return self._height
+
+    @height.setter
+    def height(self, value: int) -> None:
+        self._height = value
+        self._resize()
+
+    def _resize(self) -> None:
+        assert self._width >= 2, f"Minimum width of 2, got: {self._width}"
+        assert self._height >= 2, f"Minimum height of 2, got: {self._height}"
+        self.texture = [
+            "┌" + "-" * (self._width - 2) + "┐",
+            *[
+                "┊" + self.fill_char * (self._width - 2) + "┊"
+                for _ in range(self._height - 2)
+            ],
+            "└" + "-" * (self._width - 2) + "┘",
+        ]
+
+
+class Crafting(UIElement, Panel):  # GUI
+    _DEFAULT_PRODUCT_COLOR: ColorValue = colex.GRAY
+    _CRAFTABLE_PRODUCT_COLOR: ColorValue = colex.GOLDENROD
+    _SELECTED_PRODUCT_COLOR: ColorValue = colex.BOLD + colex.REVERSE + colex.WHITE
+    _SELECTED_CRAFTABLE_PRODUCT_COLOR: ColorValue = (
+        colex.BOLD + colex.REVERSE + colex.AQUA
+    )
+    _MISSING_IDGREDIENT_COLOR: ColorValue = (
+        colex.BOLD + colex.REVERSE + colex.LIGHT_GRAY
+    )
+    _CRAFTABLE_IDGREDIENT_COLOR: ColorValue = (
+        colex.BOLD + colex.REVERSE + colex.PALE_GREEN
+    )
+    position = Vec2(2, -10)
+    centered = True
+    color = colex.BOLD + colex.WHITE
+    visible = False
+
+    def __init__(self, parent: Node) -> None:
+        super().__init__(parent=parent)
+        self.width = 50
+        self.height = 8
+        self._info_labels: list[Label] = []
+
+    # I did not want to pass inventory of the one interacting with the `Fabrication`,
+    # therefore, states regarding craftable and count of idgredients are passed
+    # using a tuple of 3 elements
+    def update_from_recipe(
+        self,
+        current_recipe: Recipe,
+        selected_idgredient_counts: tuple[IdgredientCount, ...],
+        all_recipe_states: list[tuple[Recipe, Craftable]],
+    ) -> None:
+        self.height = len(all_recipe_states) + len(current_recipe.idgredients) + 2
+
+        for products_label in self._info_labels:
+            products_label.queue_free()
+        self._info_labels.clear()
+
+        lino = 1  # Manual lino, because current recipe needs more place
+        for recipe, craftable in all_recipe_states:
+            products_text = " + ".join(
+                f"{product_count}x{product.name.replace("_", " ").capitalize()}"
+                for product, product_count in recipe.products.items()
+            )
+            products_color = (  # This might not be the prettiest, but should be ok
+                (
+                    self._SELECTED_CRAFTABLE_PRODUCT_COLOR
+                    if recipe is current_recipe
+                    else self._CRAFTABLE_PRODUCT_COLOR
+                )
+                if craftable
+                else (
+                    self._SELECTED_PRODUCT_COLOR
+                    if recipe is current_recipe
+                    else self._DEFAULT_PRODUCT_COLOR
+                )
+            )
+            products_label = Label(
+                self,
+                text=products_text,
+                z_index=self.z_index + 1,
+                color=products_color,
+                position=Vec2(
+                    -self.texture_size.x // 2,
+                    -self.texture_size.y // 2 + lino,
+                ),
+            )
+            lino += 1
+            self._info_labels.append(products_label)
+
+            if recipe is current_recipe:
+                for index, (idgredient, idgredient_cost) in enumerate(
+                    recipe.idgredients.items()
+                ):
+                    idgredient_name = idgredient.name.replace("_", " ").capitalize()
+                    idgredient_count = selected_idgredient_counts[index]
+                    idgredient_text = (
+                        f"{idgredient_cost}x{idgredient_name} ({idgredient_count})"
+                    )
+                    idgredient_color = (
+                        self._CRAFTABLE_IDGREDIENT_COLOR
+                        if idgredient_count >= idgredient_cost
+                        else self._MISSING_IDGREDIENT_COLOR
+                    )
+                    idgredient_label = Label(
+                        self,
+                        text="- " + idgredient_text,
+                        z_index=self.z_index + 1,
+                        color=idgredient_color,
+                        position=Vec2(
+                            -self.texture_size.x // 2,
+                            -self.texture_size.y // 2 + lino,
+                        ),
+                    )
+                    self._info_labels.append(idgredient_label)
+                    lino += 1

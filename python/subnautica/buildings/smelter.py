@@ -3,10 +3,10 @@ from charz import Sprite, Vec2
 
 from ..player import Player
 from ..item import ItemID, Recipe
-from ..props import Interactable, Crafter
+from ..props import Interactable, Crafting
 
 
-class Smelter(Interactable, Crafter, Sprite):
+class Smelter(Interactable, Crafting, Sprite):
     _REACH = 3
     _REACH_CENTER = Vec2(3, 0.5)
     _RECIPES = [
@@ -43,4 +43,4 @@ class Smelter(Interactable, Crafter, Sprite):
             interactor,
             Player,
         ), "Only `Player` can interact with `Smelter`"
-        self.craft_each_if_possible(interactor._inventory)
+        self.craft_each_if_possible(interactor.inventory)

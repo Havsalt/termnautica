@@ -6,6 +6,7 @@ from charz import Camera, Sprite, Collider, Hitbox, Vec2
 
 from . import ui, ocean
 from .props import Collectable, Interactable, Building
+from .fabrication import Fabrication
 from .particles import Bubble, Blood
 from .item import ItemID, Stat, stats
 from .utils import move_toward
@@ -27,6 +28,9 @@ class Player(Collider, Sprite):
         "2",
         "3",
         "space",
+        "tab",
+        "j",
+        "k",
     )
     position = Vec2(17, -18)
     hitbox = Hitbox(size=Vec2(5, 3), centered=True)
@@ -45,29 +49,31 @@ class Player(Collider, Sprite):
     _current_interactable: Sprite | None = None
 
     def __init__(self) -> None:
-        self._inventory = dict[ItemID, Count]()
+        self.inventory = dict[ItemID, Count]()
         # NOTE: Current `Camera` has to be initialized before `Player.__init__` is called
         self._health_bar = ui.HealthBar(Camera.current)
         self._oxygen_bar = ui.OxygenBar(Camera.current)
         self._hunger_bar = ui.HungerBar(Camera.current)
         self._thirst_bar = ui.ThirstBar(Camera.current)
-        ui.Inventory(Camera.current, inventory_ref=self._inventory)
+        ui.Inventory(Camera.current, inventory_ref=self.inventory)
         ui.HotbarE(Camera.current)
         ui.Hotbar1(Camera.current)
         ui.Hotbar2(Camera.current)
         ui.Hotbar3(Camera.current)
+        self.crafting_gui = ui.Crafting(Camera.current)
         # DEV
-        self._inventory[ItemID.WATER_BOTTLE] = 2
+        self.inventory[ItemID.WATER_BOTTLE] = 2
         self._thirst_bar.value = 50
-        self._inventory[ItemID.FRIED_FISH_NUGGET] = 2
+        self.inventory[ItemID.FRIED_FISH_NUGGET] = 2
         self._hunger_bar.value = 50
-        self._inventory[ItemID.COD_SOUP] = 2
-        self._inventory[ItemID.BANDAGE] = 2
+        self.inventory[ItemID.COD_SOUP] = 2
+        self.inventory[ItemID.BANDAGE] = 2
         self._health_bar.value = 20
 
     def update(self, _delta: float) -> None:
         # Order of tasks
         self.handle_action_input()
+        self.handle_gui()
         self.handle_movement()
         self.handle_interact_selection()
         self.handle_interact()
@@ -84,17 +90,17 @@ class Player(Collider, Sprite):
             self.on_death()
 
     def consume_item(self, item: ItemID, count: Count = 1) -> None:
-        if item not in self._inventory:
+        if item not in self.inventory:
             raise KeyError(
                 f"Attempted removing {count} {item.name},"
-                f" but {item.name} is not found in {self._inventory}"
+                f" but {item.name} is not found in {self.inventory}"
             )
-        elif count > self._inventory[item]:
+        elif count > self.inventory[item]:
             raise ValueError(
                 f"Attempted to remove {count} {item.name},"
-                f" but only has {self._inventory[item]} in {self._inventory}"
+                f" but only has {self.inventory[item]} in {self.inventory}"
             )
-        self._inventory[item] -= count
+        self.inventory[item] -= count
 
         for stat in Stat:
             if stat not in stats[item]:
@@ -115,7 +121,7 @@ class Player(Collider, Sprite):
         if not (self._current_action == "1" and self._key_just_pressed):
             return
 
-        for item in self._inventory:
+        for item in self.inventory:
             if item in stats and Stat.EATABLE in stats[item]:
                 self.consume_item(item)
                 break
@@ -124,7 +130,7 @@ class Player(Collider, Sprite):
         if not (self._current_action == "2" and self._key_just_pressed):
             return
 
-        for item in self._inventory:
+        for item in self.inventory:
             if item in stats and Stat.DRINKABLE in stats[item]:
                 self.consume_item(item)
                 break
@@ -133,7 +139,7 @@ class Player(Collider, Sprite):
         if not (self._current_action == "3" and self._key_just_pressed):
             return
 
-        for item in self._inventory:
+        for item in self.inventory:
             if item in stats and Stat.HEALING in stats[item]:
                 self.consume_item(item)
                 break
@@ -180,6 +186,20 @@ class Player(Collider, Sprite):
         elif not keyboard.is_pressed(self._current_action):
             # Release
             self._current_action = None
+
+    def handle_gui(self) -> None:
+        if not self._key_just_pressed:
+            return
+        if not isinstance(self._current_interactable, Fabrication):
+            return
+        if self._current_action == "j" or (
+            self._current_action == "tab" and not keyboard.is_pressed("shift")
+        ):
+            self._current_interactable.attempt_select_next_recipe()
+        elif self._current_action == "k" or (
+            self._current_action == "tab" and keyboard.is_pressed("shift")
+        ):
+            self._current_interactable.attempt_select_previous_recipe()
 
     def handle_movement_in_building(self, velocity: Vec2) -> None:
         assert isinstance(self.parent, Building)
@@ -286,25 +306,28 @@ class Player(Collider, Sprite):
                 # but know that it made it easier to split logic into mixin class
                 proximite_interactables.append((condition_and_dist[1], node))
 
-        # Highlight closest interactable
+        # Highlight closest interactable - Using DSU
         if proximite_interactables:
             proximite_interactables.sort(key=lambda pair: pair[0])
             # Allow this because `Interactable` should always be used with `Sprite`
-            if isinstance(
-                self._current_interactable, Interactable
-            ):  # Reset color to class color
+            if isinstance(self._current_interactable, Interactable):
+                # Reset color to class color
                 self._current_interactable.loose_focus()
+                self._current_interactable.on_deselect(self)
             # Reverse color of current interactable
             first = proximite_interactables[0][1]
             assert isinstance(
-                first, Sprite
+                first,
+                Sprite,
             ), f"{first.__class__} is missing `Sprite` base"
             self._current_interactable = first
             self._current_interactable.grab_focus()
+            self._current_interactable.when_selected(self)
         # Or unselect last interactable that *was* in reach
         elif self._current_interactable is not None:
             assert isinstance(self._current_interactable, Interactable)
             self._current_interactable.loose_focus()
+            self._current_interactable.on_deselect(self)
             self._current_interactable = None
 
     def handle_interact(self) -> None:
@@ -324,7 +347,7 @@ class Player(Collider, Sprite):
         # Collect collectable that is selected
         # `self._curr_interactable` is already in reach
         if self._current_action == "e" and self._key_just_pressed:
-            self._current_interactable.collect_into(self._inventory)
+            self._current_interactable.collect_into(self.inventory)
             self._current_interactable.queue_free()
             self._current_interactable = None
 

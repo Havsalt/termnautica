@@ -1,12 +1,12 @@
 import colex
 from charz import Sprite
 
-from ..player import Player
 from ..item import ItemID, Recipe
-from ..props import Interactable, Crafter
+from ..props import Interactable
+from ..fabrication import Fabrication
 
 
-class BasicFabricator(Interactable, Crafter, Sprite):
+class BasicFabricator(Fabrication, Interactable, Sprite):
     _REACH = 4
     _REACH_FRACTION = 1
     _RECIPES = [
@@ -18,7 +18,10 @@ class BasicFabricator(Interactable, Crafter, Sprite):
             },
         ),
         Recipe(
-            products={ItemID.CHOCOLATE: 3},
+            products={
+                ItemID.CHOCOLATE: 3,
+                ItemID.TITANIUM_BAR: 1,
+            },
             idgredients={
                 ItemID.KELP: 2,
                 ItemID.COAL_ORE: 1,
@@ -44,10 +47,3 @@ class BasicFabricator(Interactable, Crafter, Sprite):
         ":    :",
         "\\.__./",
     ]
-
-    def on_interact(self, interactor: Sprite) -> None:
-        assert isinstance(
-            interactor,
-            Player,
-        ), "Only `Player` can interact with `Smelter`"
-        self.craft_each_if_possible(interactor._inventory)
