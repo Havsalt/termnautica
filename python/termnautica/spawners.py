@@ -132,6 +132,20 @@ class OreSpawner(Spawner[ores.Gold | ores.Titanium | ores.Copper | ores.Coal]):
     texture = ["."]
 
 
+class CrystalSpawner(Spawner[ores.Crystal]):
+    _SPAWN_OFFSET = Vec2(-1, 0)
+    position = Vec2(-1, 0)
+    color = colex.ANTIQUE_WHITE
+    texture = ["."]
+
+
+class DiamondOreSpawner(Spawner[ores.Diamond]):
+    _SPAWN_OFFSET = Vec2(-1, 0)
+    position = Vec2(-1, 0)
+    color = colex.AZURE
+    texture = ["_"]
+
+
 # Coral
 class FishSpawner(
     Spawner[fish.SmallFish | fish.MediumFish | fish.LongFish | fish.WaterFish]

@@ -138,6 +138,7 @@ class BaseFish(FishAI, Interactable, Collectable, Sprite):
 
 
 class SmallFish(BaseFish):
+    _SOUND_COLLECT = pygame.mixer.Sound("assets/sounds/collect/small_fish.wav")
     _ITEM = ItemID.GOLD_FISH
     color = colex.DARK_SALMON
     texture = ["<><"]
@@ -163,12 +164,16 @@ class WaterFish(BaseFish):
 
 # TODO: Add achievement for this
 class Nemo(BaseFish):
+    _SOUND_COLLECT = pygame.mixer.Sound("assets/sounds/collect/nemo.wav")
     _ITEM = ItemID.NEMO
     color = colex.LIGHT_SALMON
     texture = ["<)))<"]
 
 
 class SwordFish(FishAI, Sprite):
+    _SOUND_LURK = pygame.mixer.Sound("assets/sounds/collect/hostile_fish_lurk.wav")
+    _CHANNEL_LURK = pygame.mixer.Channel(4)
+    _SOUND_LURK_CHANCE: int = 2000  # 1 out of X chance
     _STEALTH_COLOR: ColorValue = colex.from_hex("#2B2B2B")
     # color = colex.from_hex("#adcdc0")
     color = colex.from_hex("#ffd966")
@@ -177,8 +182,14 @@ class SwordFish(FishAI, Sprite):
     texture = ["«««Ó((ΞΞΞΞx<"]
 
     def update(self, _delta: float) -> None:
+        # TODO: Add spatial sound
+        if (
+            random.randint(1, self._SOUND_LURK_CHANCE) == 1
+            and not self._CHANNEL_LURK.get_busy()
+        ):
+            self._CHANNEL_LURK.play(self._SOUND_LURK)
         # TODO: Refactor this quick solution
-        super().update(0)
+        super().update(0)  # Process `FishAI`
         if not self.is_submerged():
             return
         for node in Sprite.texture_instances.values():

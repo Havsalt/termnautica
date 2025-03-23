@@ -95,7 +95,7 @@ class App(Engine):
 
         from .buildings.grill import Grill
 
-        Grill(position=Vec2(9, 17))
+        Grill(position=Vec2(10, 28))
 
         # from .fish import WaterFish
         # from .spawners import FishSpawner

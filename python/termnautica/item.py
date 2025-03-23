@@ -48,6 +48,8 @@ class ItemID(Enum):
     CHOCOLATE = auto()
     FABRIC = auto()
     STRING = auto()
+    CRYSTAL = auto()
+    DIAMOND = auto()
 
 
 stats: dict[ItemID, dict[Stat, Change]] = {

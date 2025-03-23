@@ -124,3 +124,19 @@ class Fire(Particle):
         ["*"],
         ["."],
     ]
+
+
+class ShineSpark(Particle):
+    _LIFETIME = 3
+    _INITAL_SPEED = 0.8
+    _GRAVITY_STRENGTH = 0
+    _COLORS = [
+        colex.PURPLE,
+        colex.ANTIQUE_WHITE,
+        colex.PINK,
+    ]
+    _TEXTURES = [
+        ["*"],
+        ["."],
+    ]
+    z_index = 1

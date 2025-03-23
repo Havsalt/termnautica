@@ -25,7 +25,7 @@ SPAWN_CHANCES: dict[type[spawners.Spawner], int] = {
 
 
 class Floor(Sprite):
-    REST_DEPTH: int = 15
+    REST_DEPTH: int = 30
     ROCK_START_HEIGHT: int = -10
     z_index = -1
     color = colex.from_hex("#C2B280")
@@ -96,6 +96,19 @@ class Water(Sprite):
         )
 
 
+class Abyss:
+    SPAWN_CHANCE: ClassVar[int] = 200  # 1 out of X chance
+    MIN_WIDTH: ClassVar[int] = 10
+    MAX_WIDTH: ClassVar[int] = 20
+    MIN_DEPTH: ClassVar[int] = 20
+    MAX_DEPTH: ClassVar[int] = 60
+    length_left: ClassVar[int] = 0
+    current_depth: ClassVar[int] = 0
+    just_began: ClassVar[bool] = False
+    just_ended: ClassVar[bool] = False
+    floor_points: ClassVar[set[Coordinate]] = set()
+
+
 def generate_water() -> None:
     for x in range(WIDTH):
         (
@@ -120,43 +133,68 @@ def attempt_generate_spawner_at(location: Vec2) -> None:
 
 def generate_floor():
     depth = 0
-    vec_points: list[Vec2] = []
-    abyss_length_left = 10
-    abyss_just_now = False
-    abyss_just_was = False
+    texture_points: list[Vec2] = []
+
     for x_position in range(-WIDTH // 2, WIDTH // 2):
-        if abyss_length_left <= 0 and random.randint(1, 100) < 4:
-            abyss_just_now = True
-            abyss_length_left = random.randint(15, 20)
+        # Check if starting to generate an abyss
+        if not Abyss.length_left and random.randint(1, Abyss.SPAWN_CHANCE) == 1:
+            Abyss.just_began = True
+            Abyss.current_depth = random.randint(
+                Abyss.MIN_DEPTH,
+                Abyss.MAX_DEPTH,
+            )
+            Abyss.length_left = random.randint(
+                Abyss.MIN_WIDTH,
+                Abyss.MAX_WIDTH,
+            )
+
         depth += randf(-1, 1)
-        point = Vec2i(
-            x_position,
-            int(depth) + Floor.REST_DEPTH + (20 if abyss_length_left > 0 else 0),
-        )
-        abyss_length_left -= 1
-        if abyss_length_left == 0:
-            abyss_just_was = True
+        point = Vec2i(x_position, int(depth) + Floor.REST_DEPTH)
+
+        if Abyss.length_left:
+            point.y += Abyss.current_depth
+            Abyss.floor_points.add(point.to_tuple())
+            Abyss.length_left -= 1
+            if Abyss.length_left == 0:
+                Abyss.just_ended = True
+
         # Temp point - For deciding texture
-        vec_points.append(point)
-        if abyss_just_now or abyss_just_was:
-            abyss_just_was = False
-            abyss_just_now = False
-            for i in range(20):
-                abyss_point = Vec2i(
+        texture_points.append(point)
+
+        # Generate abyss walls + `CrystalSpawner`
+        if Abyss.just_began or Abyss.just_ended:
+            Abyss.just_ended = False
+            Abyss.just_began = False
+            for i in range(Abyss.current_depth):
+                abyss_wall_point = Vec2i(
                     x_position,
                     int(depth) + Floor.REST_DEPTH + i,
                 )
-                Floor.points.add(abyss_point.to_tuple())
-                vec_points.append(abyss_point)
+                abyss_wall_point.x += random.randint(-1, 0)
+                Floor.points.add(abyss_wall_point.to_tuple())
+                texture_points.append(abyss_wall_point)
+                if random.randint(1, 30) == 1:
+                    spawners.CrystalSpawner().with_global_position(
+                        abyss_wall_point + spawners.CrystalSpawner.position
+                    )
+
         # Store point over time - Used for collision
         Floor.points.add(point.to_tuple())
 
     # FIXME: Implement properly - Almost working
-    for prev, curr, peak in groupwise(vec_points, n=3):
+    for prev, curr, peak in groupwise(texture_points, n=3):
         is_climbing = peak.y - curr.y < 0
         is_flatting = abs(peak.y - curr.y) < 0.8
         was_dropping = curr.y - prev.y > 0
-        if is_flatting:
+        is_steep = curr.y - prev.y >= 1 and peak.y - curr.y >= 1
+        if is_steep:
+            ocean_floor = Floor(position=curr, texture=["|"])
+            if random.randint(1, 3) == 1:
+                if random.randint(1, 2) == 1:
+                    ocean_floor.texture = ["<"]
+                else:
+                    ocean_floor.texture = [">"]
+        elif is_flatting:
             ocean_floor = Floor(position=curr)
         elif is_climbing and was_dropping:
             ocean_floor = Floor(position=curr, texture=["V"])
@@ -171,4 +209,16 @@ def generate_floor():
         # Make rock color if high up
         if curr.y <= Floor.ROCK_START_HEIGHT:
             ocean_floor.color = colex.GRAY
+        if is_steep:  # Don't generate spawners in too steep terrain
+            continue
+        snapped = (
+            floor(curr.x),
+            floor(curr.y),
+        )
+        if snapped in Abyss.floor_points:
+            if random.randint(1, 8) == 1:
+                spawners.DiamondOreSpawner().with_global_position(
+                    curr + spawners.DiamondOreSpawner.position
+                )
+            continue
         attempt_generate_spawner_at(curr)

@@ -170,7 +170,7 @@ class OxygenBar(InfoBar):
     _SOUND_BREATHE = pygame.mixer.Sound("assets/sounds/ui/oxygen/breathe.wav")
     _SOUND_BUBBLE = pygame.mixer.Sound("assets/sounds/ui/oxygen/bubble.wav")
     _CHANNEL_BREATH = pygame.mixer.Channel(2)
-    _CHANNEL_BUBBLE = pygame.mixer.Channel(2)
+    _CHANNEL_BUBBLE = pygame.mixer.Channel(3)
     _LABEL = "O2"
     position = Vec2(_UI_LEFT_OFFSET, -4)
     color = colex.AQUAMARINE
