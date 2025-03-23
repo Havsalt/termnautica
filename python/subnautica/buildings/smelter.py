@@ -3,10 +3,11 @@ from charz import Sprite, Vec2
 
 from ..player import Player
 from ..item import ItemID, Recipe
-from ..props import Interactable, Crafting
+from ..props import Interactable
+from ..fabrication import Fabrication
 
 
-class Smelter(Interactable, Crafting, Sprite):
+class Smelter(Fabrication, Interactable, Sprite):
     _REACH = 3
     _REACH_CENTER = Vec2(3, 0.5)
     _RECIPES = [
@@ -37,10 +38,3 @@ class Smelter(Interactable, Crafting, Sprite):
         "/^\\¨¨¨\\",
         "\\_/___/",
     ]
-
-    def on_interact(self, interactor: Sprite) -> None:
-        assert isinstance(
-            interactor,
-            Player,
-        ), "Only `Player` can interact with `Smelter`"
-        self.craft_each_if_possible(interactor.inventory)
