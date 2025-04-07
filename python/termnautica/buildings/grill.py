@@ -1,3 +1,5 @@
+import random
+
 import colex
 from charz import Sprite, Vec2
 
@@ -44,4 +46,5 @@ class Grill(Fabrication, Interactable, Sprite):
         self._time_since_emmit -= 1
         if self._time_since_emmit <= 0:
             self._time_since_emmit = self._FIRE_EMMIT_INTERVAL
-            Fire().with_global_position(self.global_position + self._FIRE_OFFSET)
+            fire = Fire().with_global_position(self.global_position + self._FIRE_OFFSET)
+            fire.position.x += random.randint(-1, 1)

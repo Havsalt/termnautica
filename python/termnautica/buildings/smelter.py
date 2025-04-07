@@ -31,6 +31,20 @@ class Smelter(Fabrication, Interactable, Sprite):
                 ItemID.COAL_ORE: 1,
             },
         ),
+        Recipe(
+            products={ItemID.IRON_BAR: 2},
+            idgredients={
+                ItemID.IRON_ORE: 2,
+                ItemID.COAL_ORE: 1,
+            },
+        ),
+        Recipe(
+            products={ItemID.STEEL_BAR: 1},
+            idgredients={
+                ItemID.IRON_BAR: 2,
+                ItemID.COAL_ORE: 1,
+            },
+        ),
     ]
     color = colex.ORANGE_RED
     texture = [

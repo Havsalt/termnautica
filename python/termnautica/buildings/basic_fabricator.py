@@ -53,6 +53,20 @@ class BasicFabricator(Fabrication, Interactable, Sprite):
                 ItemID.STRING: 1,
             },
         ),
+        Recipe(
+            products={ItemID.STEEL_KNIFE: 1},
+            idgredients={
+                ItemID.STEEL_BAR: 2,
+                ItemID.STRING: 1,
+            },
+        ),
+        Recipe(
+            products={ItemID.BASIC_DIVING_MASK: 1},
+            idgredients={
+                ItemID.FABRIC: 2,
+                ItemID.STRING: 1,
+            },
+        ),
     ]
     centered = True
     color = colex.MEDIUM_AQUAMARINE

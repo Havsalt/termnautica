@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from charz import Sprite
 
 from .props import Crafting
-from .item import ItemID
+from .item import ItemID, Slot, gear
 
 
 # Type checking for lazy loading
@@ -104,3 +104,9 @@ class Fabrication(Crafting):  # Extended Component (mixin class)
         ), "Only `Player` can interact with `BasicFabricator`"
         if self.can_craft_by_index(actor.inventory):
             self.craft_by_index(actor.inventory)
+            # After crafting, equip *all* equippables
+            for product in self._RECIPES[self._selected_recipe_index].products:
+                if not product in gear:
+                    continue
+                if product in gear:
+                    actor.equip_item(product)

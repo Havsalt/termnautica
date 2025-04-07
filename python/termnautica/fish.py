@@ -10,6 +10,7 @@ from charz import Sprite, Vec2, text, clamp, sign
 from .props import Collectable, Interactable
 from .player import Player
 from .item import ItemID
+from .particles import Blood
 from .utils import move_toward
 
 # Type checking for lazy loading
@@ -170,16 +171,47 @@ class Nemo(BaseFish):
     texture = ["<)))<"]
 
 
-class SwordFish(FishAI, Sprite):
-    _SOUND_LURK = pygame.mixer.Sound("assets/sounds/collect/hostile_fish_lurk.wav")
+class SwordFish(FishAI, Interactable, Sprite):
+    _REACH = 6  # Shorter reach to attack it
+    _REACH_CENTER = Vec2(6, 0)
+    _DAMAGE: int = 15
+    _ATTACK_INTERVAL: int = 10  # Frames
+    _SOUND_HIT = pygame.mixer.Sound("assets/sounds/hit.wav")
+    _SOUND_LURK = pygame.mixer.Sound("assets/sounds/hostile_fish_lurk.wav")
     _CHANNEL_LURK = pygame.mixer.Channel(4)
     _SOUND_LURK_CHANCE: int = 2000  # 1 out of X chance
     _STEALTH_COLOR: ColorValue = colex.from_hex("#2B2B2B")
+    _ATTACKED_BLOOD_COUNT: int = 3
+    _DEATH_BLOOD_COUNT: int = 10
     # color = colex.from_hex("#adcdc0")
     color = colex.from_hex("#ffd966")
     # texture = ["«««Ó(((()><"]
     # texture = ["«««°(((()><"]
     texture = ["«««Ó((ΞΞΞΞx<"]
+    _health: float = 5
+    _attack_cooldown: int = 0
+    _is_highlighted: bool = False
+
+    def on_interact(self, actor: Sprite) -> None:
+        assert isinstance(actor, Player), "Only `Player` can attack `SwordFish`"
+        self._health -= actor.damage
+        for _ in range(self._ATTACKED_BLOOD_COUNT):
+            blood = Blood().with_global_position(self.global_position)
+            blood.position.x += random.randint(-2, 2)
+            self._SOUND_HIT.play()
+        if self._health <= 0:
+            self.queue_free()
+            for _ in range(self._DEATH_BLOOD_COUNT):
+                blood = Blood().with_global_position(self.global_position)
+                blood.position.x += random.randint(-2, 2)
+
+    def grab_focus(self) -> None:
+        super().grab_focus()
+        self._is_highlighted = True
+
+    def loose_focus(self) -> None:
+        super().loose_focus()
+        self._is_highlighted = False
 
     def update(self, _delta: float) -> None:
         # TODO: Add spatial sound
@@ -192,11 +224,15 @@ class SwordFish(FishAI, Sprite):
         super().update(0)  # Process `FishAI`
         if not self.is_submerged():
             return
+        self._attack_cooldown -= 1
+        if self._attack_cooldown >= 0:
+            return
         for node in Sprite.texture_instances.values():
             if isinstance(node, Player):
                 if node.is_in_building():
                     self.color = self.__class__.color
                     continue
+                # TODO: Properly center fish
                 dist = self.global_position.distance_to(node.global_position)
                 if dist < 20:
                     direction = self.global_position.direction_to(node.global_position)
@@ -207,8 +243,14 @@ class SwordFish(FishAI, Sprite):
                         self.texture = self.__class__.texture
                     self.color = self._STEALTH_COLOR
                 if dist < 4:
-                    node._health_bar.value -= 1
+                    self._attack_cooldown = self._ATTACK_INTERVAL
+                    node.health -= self._DAMAGE
                     self.color = self.__class__.color
                 if dist >= 20:
                     self.color = self.__class__.color
                 break
+        # Respect highlight
+        assert self.color is not None, "Color of `Swordfish` was None"
+        # `colex.REVERSE` means highlighted
+        if colex.REVERSE not in self.color and self._is_highlighted:
+            self.color = colex.REVERSE + self.color

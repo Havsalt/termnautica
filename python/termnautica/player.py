@@ -5,11 +5,11 @@ import colex
 import keyboard
 from charz import Camera, Sprite, Collider, Hitbox, Vec2
 
-from . import ui, ocean
+from . import gear_types, settings, ui, ocean
 from .props import Collectable, Interactable, Building
 from .fabrication import Fabrication
 from .particles import Bubble, Blood
-from .item import ItemID, Stat, stats
+from .item import ItemID, Slot, ConsumableStat, gear, consumables
 from .utils import move_toward
 
 
@@ -27,6 +27,8 @@ class Player(Collider, Sprite):
     _AIR_FRICTION: float = 0.7
     _WATER_FRICTION: float = 0.3
     _MAX_SPEED: Vec2 = Vec2(2, 2)
+    _AIR_CONSUMPTION: float = 7  # Per second - Base
+    _DROWN_DAMAGE: float = 40  # Per second
     _ACTIONS: tuple[Action, ...] = (  # Order is also precedence - First is highest
         ARROW_UP,  # NOTE: These 2 constants has to be checked before numeric strings
         ARROW_DOWN,
@@ -58,6 +60,12 @@ class Player(Collider, Sprite):
 
     def __init__(self) -> None:
         self.inventory = dict[ItemID, Count]()
+        # Gear - May be base model `None`
+        self._knife = gear_types.Knife(model=None)
+        self._diving_mask = gear_types.DivingMask(model=None)
+        self._o2_tank = gear_types.O2Tank(model=ItemID.HIGH_CAPACITY_O2_TANK)
+        self._swimming_suite = gear_types.SwimSuite(model=None)
+        # UI
         # NOTE: Current `Camera` has to be initialized before `Player.__init__` is called
         self._health_bar = ui.HealthBar(Camera.current)
         self._oxygen_bar = ui.OxygenBar(Camera.current)
@@ -78,6 +86,31 @@ class Player(Collider, Sprite):
         # self.inventory[ItemID.BANDAGE] = 2
         # self._health_bar.value = 20
 
+    @property
+    def health(self) -> float:
+        return self._health_bar.value
+
+    @health.setter  # NOTE: Clamped health
+    def health(self, new_health: float) -> None:
+        # NOTE: Use min-max until `int | float` is changed in `linflex`
+        change = new_health - self._health_bar.value
+        self._health_bar.value = min(
+            max(
+                new_health,
+                0,
+            ),
+            self._health_bar.MAX_VALUE,
+        )
+        if change < 0:  # Took damage
+            Blood().with_global_position(
+                x=self.global_position.x - 1,
+                y=self.global_position.y - 1,
+            )
+
+    @property
+    def damage(self) -> float:
+        return self._knife.value
+
     def update(self, _delta: float) -> None:
         # Order of tasks
         self.handle_action_input()
@@ -93,11 +126,22 @@ class Player(Collider, Sprite):
         self.handle_eating()
         self.handle_drinking()
         self.handle_healing()
+        if (
+            self.is_submerged()
+            and not self.is_in_building()
+            and self._diving_mask.model is not None
+        ):
+            self.texture[0] = " [#]"  # Show diver helmet
+        else:
+            self.texture[0] = "  O"  # Show no headgear
         # Check if dead
-        if self._health_bar.value == 0:
+        if self.health == 0:
             self.on_death()
 
     def consume_item(self, item: ItemID, count: Count = 1) -> None:
+        assert (
+            item in consumables
+        ), f"All consumable items require additional metadata, for item: {item}"
         if item not in self.inventory:
             raise KeyError(
                 f"Attempted removing {count} {item.name},"
@@ -110,27 +154,44 @@ class Player(Collider, Sprite):
             )
         self.inventory[item] -= count
 
-        for stat in Stat:
-            if stat not in stats[item]:
+        for stat in ConsumableStat:
+            if stat not in consumables[item]:
                 continue
 
-            change = stats[item][stat]
             match stat:
-                case Stat.EATABLE:
-                    self._hunger_bar.value += change
-                case Stat.DRINKABLE:
-                    self._thirst_bar.value += change
-                case Stat.HEALING:
-                    self._health_bar.value += change
+                case ConsumableStat.HUNGER:
+                    hunger_restore = consumables[item][stat]
+                    self._hunger_bar.value += hunger_restore
+                case ConsumableStat.THIRST:
+                    thirst_restore = consumables[item][stat]
+                    self._thirst_bar.value += thirst_restore
+                case ConsumableStat.HEALING:
+                    healing = consumables[item][stat]
+                    self._health_bar.value += healing
                 case _:
                     assert_never(stat)
+    
+    def equip_item(self, item: ItemID) -> None:
+        assert item in gear, f"Item {item} is not in gear registry"
+        slot = gear[item][0]
+        match slot:
+            case Slot.MELEE:
+                self._knife.model = item
+            case Slot.MASK:
+                self._diving_mask.model = item
+            case Slot.SUITE:
+                self._swimming_suite.model = item
+            case Slot.TANK:
+                self._o2_tank.model = item
+            case _:
+                assert_never(slot)
 
     def handle_eating(self) -> None:
         if not (self._current_action == "1" and self._key_just_pressed):
             return
 
         for item in self.inventory:
-            if item in stats and Stat.EATABLE in stats[item]:
+            if item in consumables and ConsumableStat.HUNGER in consumables[item]:
                 self.consume_item(item)
                 break
 
@@ -139,7 +200,7 @@ class Player(Collider, Sprite):
             return
 
         for item in self.inventory:
-            if item in stats and Stat.DRINKABLE in stats[item]:
+            if item in consumables and ConsumableStat.THIRST in consumables[item]:
                 self.consume_item(item)
                 break
 
@@ -148,7 +209,7 @@ class Player(Collider, Sprite):
             return
 
         for item in self.inventory:
-            if item in stats and Stat.HEALING in stats[item]:
+            if item in consumables and ConsumableStat.HEALING in consumables[item]:
                 self.consume_item(item)
                 break
 
@@ -271,14 +332,11 @@ class Player(Collider, Sprite):
             return
         # Decrease health if no oxygen, and spawn particles each tick
         if self._oxygen_bar.value == 0:
-            self._health_bar.value -= 1
-            Blood().with_global_position(
-                x=self.global_position.x - 1,
-                y=self.global_position.y - 1,
-            )
+            self.health -= self._DROWN_DAMAGE / settings.FPS  # X HP per second
             return
         # Decrease oxygen
-        self._oxygen_bar.value -= 1 / 16
+        rate = self._AIR_CONSUMPTION / settings.FPS
+        self._oxygen_bar.value -= rate * self._diving_mask.value
         raw_count = self._oxygen_bar.MAX_VALUE / self._oxygen_bar.MAX_CELL_COUNT
         # NOTE: Might be fragile logic, but works at least when
         #       MAX_VALUE = 300 and MAX_CELL_COUNT = 10
@@ -289,22 +347,14 @@ class Player(Collider, Sprite):
             )
 
     def handle_hunger(self) -> None:
-        self._hunger_bar.value -= 1 / 16
+        self._hunger_bar.value -= 1 / settings.FPS
         if self._hunger_bar.value == 0:
-            self._health_bar.value -= 1
-            Blood().with_global_position(
-                x=self.global_position.x - 1,
-                y=self.global_position.y - 1,
-            )
+            self.health -= 1
 
     def handle_thirst(self) -> None:
-        self._thirst_bar.value -= 1 / 16
+        self._thirst_bar.value -= 1 / settings.FPS
         if self._thirst_bar.value == 0:
-            self._health_bar.value -= 1
-            Blood().with_global_position(
-                x=self.global_position.x - 1,
-                y=self.global_position.y - 1,
-            )
+            self.health -= 1
 
     def handle_interact_selection(self) -> None:
         proximite_interactables: list[tuple[float, Interactable]] = []

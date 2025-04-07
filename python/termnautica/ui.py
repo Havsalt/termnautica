@@ -258,7 +258,7 @@ class Crafting(UIElement, Panel):  # GUI
 
     # I did not want to pass inventory of the one interacting with the `Fabrication`,
     # therefore, states regarding craftable and count of idgredients are passed
-    # using a tuple of 3 elements
+    # using a tuple of 2 elements
     def update_from_recipe(
         self,
         current_recipe: Recipe,
@@ -274,7 +274,7 @@ class Crafting(UIElement, Panel):  # GUI
         lino = 1  # Manual lino, because current recipe needs more place
         for recipe, craftable in all_recipe_states:
             products_text = " + ".join(
-                f"{product_count}x{product.name.replace("_", " ").capitalize()}"
+                f" {product_count}x{product.name.replace("_", " ").capitalize()} "
                 for product, product_count in recipe.products.items()
             )
             products_color = (  # This might not be the prettiest, but should be ok
@@ -296,7 +296,7 @@ class Crafting(UIElement, Panel):  # GUI
                 z_index=self.z_index + 1,
                 color=products_color,
                 position=Vec2(
-                    -self.texture_size.x // 2,
+                    -self.texture_size.x // 2 - 1,
                     -self.texture_size.y // 2 + lino,
                 ),
             )
@@ -319,11 +319,11 @@ class Crafting(UIElement, Panel):  # GUI
                     )
                     idgredient_label = Label(
                         self,
-                        text="- " + idgredient_text,
+                        text=f" - {idgredient_text} ",
                         z_index=self.z_index + 1,
                         color=idgredient_color,
                         position=Vec2(
-                            -self.texture_size.x // 2,
+                            -self.texture_size.x // 2 - 1,
                             -self.texture_size.y // 2 + lino,
                         ),
                     )

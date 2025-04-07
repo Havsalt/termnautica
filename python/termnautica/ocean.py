@@ -5,14 +5,14 @@ from typing import Self, ClassVar
 import colex
 from charz import Sprite, Vec2, Vec2i
 
-from . import spawners
+from . import settings, spawners
 from .utils import groupwise, randf
 
 
 type Coordinate = tuple[int, int]
 
 
-WIDTH: int = 500
+WIDTH: int = 500 + 500
 # TODO: Add spawning requirements, like min and max height
 # NOTE: Order will be randomized for each attempt
 # Percent in int | Min 1, Max 100
@@ -22,6 +22,11 @@ SPAWN_CHANCES: dict[type[spawners.Spawner], int] = {
     spawners.FishSpawner: 1,
     spawners.BubbleSpawner: 1,
 }
+DEPTH_LAYERS: tuple[int, ...] = (
+    20,  # Tier 0 - "Safe"
+    40,  # Tier 1
+    60,  # TIer 2
+)
 
 
 class Floor(Sprite):
@@ -54,8 +59,8 @@ class Floor(Sprite):
 class Water(Sprite):
     _REST_LEVEL: float = 0  # Where the ocean rests, in world space
     _WAVE_AMPLITUDE: float = 2
-    _WAVE_INTERVAL: float = 3 * 16  # frames
-    _WAVE_DURATION: float = 3 * 16  # frames
+    _WAVE_INTERVAL: float = 3 * settings.FPS  # Frames
+    _WAVE_DURATION: float = 3 * settings.FPS  # Frames
     _WAVE_LENGTH: float = 100
     z_index = -1
     color = colex.MEDIUM_AQUAMARINE  # + colex.from_rgb(0, 150, 255, background=True)

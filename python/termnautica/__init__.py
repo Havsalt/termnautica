@@ -14,7 +14,7 @@ random.seed(3)  # DEV
 pygame.mixer.init()
 
 from rust import RustScreen
-from . import ocean
+from . import settings, ocean
 from .player import Player
 from .buildings.lifepod import Lifepod
 
@@ -35,14 +35,13 @@ class DevCamera(Camera):
             self.position.y += 1
 
 
-# TODO: O2 1/2
-# TODO: LIFEPOD 1/3
-# TODO: CRAFTING - WATER 1/4
-# TODO: Fix Sound not triggering the first time
+# TODO: O2 1/2: Depth
+# TODO: LIFEPOD 2/3: Respawn
+# TODO: INVENTORY SIZE: 0/1
 
 
 class App(Engine):
-    fps = 16
+    fps = settings.FPS
     screen = RustScreen(
         auto_resize=True,
         initial_clear=True,
@@ -95,7 +94,7 @@ class App(Engine):
 
         from .buildings.grill import Grill
 
-        Grill(position=Vec2(10, 28))
+        Grill(position=Vec2(10, 10))
 
         # from .fish import WaterFish
         # from .spawners import FishSpawner

@@ -125,7 +125,9 @@ class KelpSpawner(Spawner[Kelp]):
         )
 
 
-class OreSpawner(Spawner[ores.Gold | ores.Titanium | ores.Copper | ores.Coal]):
+class OreSpawner(
+    Spawner[ores.Gold | ores.Titanium | ores.Copper | ores.Iron | ores.Coal]
+):
     _SPAWN_OFFSET = Vec2(-1, 0)
     position = Vec2.ZERO
     color = colex.GRAY
