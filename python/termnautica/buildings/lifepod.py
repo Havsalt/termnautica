@@ -4,7 +4,11 @@ from charz import Sprite, Label, Hitbox, Vec2, load_texture
 from ..player import Player
 from ..props import Interactable, Building
 from .smelter import Smelter
-from .basic_fabricator import BasicFabricator
+from .fabricator import Fabricator
+from .nutrient_synthesizer import NutrientSynthesizer
+from .medbay import Medbay
+from .grill import Grill
+from .assembler import Assembler
 
 
 class Ladder(Interactable, Sprite):
@@ -46,17 +50,37 @@ class Lifepod(Interactable, Building, Sprite):
             position=self.texture_size / -2,
         )
         self._name.position.y -= 3
-        self._children = [
-            Smelter(self, position=Vec2(2, 2), visible=False).with_interacting(False),
-            Ladder(self, visible=False).with_interacting(False),
-            BasicFabricator(self, position=Vec2(-7, 0), visible=False).with_interacting(
-                False
-            ),
+        self._stations = [
+            Smelter(
+                self,
+                position=Vec2(2, 1),
+                visible=False,
+            ).with_interacting(False),
+            Ladder(
+                self,
+                visible=False,
+            ).with_interacting(False),
+            Fabricator(
+                self,
+                position=Vec2(-7, 0),
+                visible=False,
+            ).with_interacting(False),
+            Assembler(
+                self,
+                position=Vec2(-5, 0),
+                visible=False,
+            ).with_interacting(False),
+            Medbay(
+                self,
+                position=Vec2(-3, 0),
+                visible=False,
+            ).with_interacting(False),
+            NutrientSynthesizer(
+                self,
+                position=Vec2(-1, 0),
+                visible=False,
+            ).with_interacting(False),
         ]
-        self._smelter_overlay = Sprite(
-            self._children[0],
-            texture=["", Smelter.texture[1]],
-        )
 
     def on_interact(self, interactor: Sprite) -> None:
         assert isinstance(
@@ -74,7 +98,7 @@ class Lifepod(Interactable, Building, Sprite):
         # self.z_index = 2
         self.texture = load_texture("lifepod/inside.txt")
         self._curr_interactor = interactor
-        for child in self._children:
+        for child in self._stations:
             child.show()
             child.interactable = True
 
@@ -103,6 +127,6 @@ class Lifepod(Interactable, Building, Sprite):
         self.z_index = self.__class__.z_index
         self.texture = load_texture("lifepod/front.txt")
         # Disable inside interactables
-        for child in self._children:
+        for child in self._stations:
             child.hide()
             child.interactable = False
