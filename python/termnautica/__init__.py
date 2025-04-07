@@ -59,12 +59,15 @@ class App(Engine):
         # Attatch lifepod to waving water
         ocean.generate_floor()
         ocean.generate_water()
+        # TODO: Update `Lifepod` position internally using ocean formula
         self.lifepod = Lifepod()
         middle_ocean_water = ocean.Water().save_rest_location()
         self.lifepod.parent = middle_ocean_water
         # Music
         pygame.mixer_music.load("assets/music/main.mp3")
         pygame.mixer_music.set_volume(0.50)
+        # DEV
+        pygame.mixer_music.set_volume(0)
         pygame.mixer_music.play(-1)  # Infinite loop
         # pygame.mixer.set_num_channels(64)
         # DEV: Stuff stashed away in this method
