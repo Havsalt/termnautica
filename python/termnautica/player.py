@@ -170,7 +170,7 @@ class Player(Collider, Sprite):
                     self._health_bar.value += healing
                 case _:
                     assert_never(stat)
-    
+
     def equip_item(self, item: ItemID) -> None:
         assert item in gear, f"Item {item} is not in gear registry"
         slot = gear[item][0]
