@@ -1,6 +1,6 @@
 [project]
 name = "termnautica"
-version = "0.1.0"
+version = "0.1.0.dev1"
 description = "Underwater game made using `charz`"
 authors = [
     { name = "Havsalt", email = "77575424+Havsalt@users.noreply.github.com" }
@@ -15,8 +15,6 @@ license = { text = "MIT" }
 
 [project.scripts]
 termnautica = "termnautica:main"
-# TODO: Remove this DEV
-main = "termnautica:main"
 
 [build-system]
 requires = ["maturin~=1.0"]
