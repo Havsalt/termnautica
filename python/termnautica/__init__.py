@@ -35,9 +35,9 @@ class DevCamera(Camera):
             self.position.y += 1
 
 
-# TODO: O2 1/2: Depth
 # TODO: LIFEPOD 2/3: Respawn
 # TODO: INVENTORY SIZE: 0/1
+# TODO: PREVENT HEALING ON CRUSHING DEPTHS
 
 
 class App(Engine):
@@ -66,8 +66,8 @@ class App(Engine):
         # Music
         pygame.mixer_music.load("assets/music/main.mp3")
         pygame.mixer_music.set_volume(0.50)
-        # DEV
-        pygame.mixer_music.set_volume(0)
+        # # DEV
+        # pygame.mixer_music.set_volume(0)
         pygame.mixer_music.play(-1)  # Infinite loop
         # pygame.mixer.set_num_channels(64)
         # DEV: Stuff stashed away in this method

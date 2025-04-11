@@ -27,7 +27,7 @@ class Assembler(Fabrication, Interactable, Sprite):
             products={ItemID.ADVANCED_SUITE: 1},
             idgredients={
                 ItemID.CRYSTAL: 3,
-                ItemID.STEEL_BAR: 1,
+                ItemID.STEEL_THREAD: 1,
                 ItemID.FABRIC: 2,
             },
         ),

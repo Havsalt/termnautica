@@ -4,8 +4,8 @@ from .item import (
     Slot,
     GearStat,
     Damage,
-    BreathModifier,
-    PressureModifier,
+    BreathReduction,
+    PressureReduction,
     CriticalDepth,
     gear,
 )
@@ -24,7 +24,7 @@ class Gear:
     ) -> None:
         # Check for valid oxygen tank
         assert model is None or (
-            model in gear and self._SLOT in gear[model]
+            model in gear and self._SLOT is gear[model][0]
         ), f"Invalid model: {model}"
         self._model = model
 
@@ -54,18 +54,16 @@ class Knife(Gear):
     _STAT_DEFAULT_VALUE = Damage(1)
 
 
-class SwimSuite(Gear):
+class DivingSuite(Gear):
     _SLOT = Slot.SUITE
-    # _STAT_DEFAULT_VALUE = ocean.DEPTH_LAYERS[0]  # First layer
-    # DEV
     _STAT_DEFAULT_VALUE = CriticalDepth(20)
 
 
 class DivingMask(Gear):
     _SLOT = Slot.MASK
-    _STAT_DEFAULT_VALUE = BreathModifier(1)
+    _STAT_DEFAULT_VALUE = BreathReduction(0.00)
 
 
 class O2Tank(Gear):
     _SLOT = Slot.TANK
-    _STAT_DEFAULT_VALUE = PressureModifier(1)
+    _STAT_DEFAULT_VALUE = PressureReduction(0.00)

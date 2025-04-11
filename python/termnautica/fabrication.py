@@ -109,4 +109,4 @@ class Fabrication(Crafting):  # Extended Component (mixin class)
                 if not product in gear:
                     continue
                 if product in gear:
-                    actor.equip_item(product)
+                    actor.equip_gear(product)

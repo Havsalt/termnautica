@@ -25,7 +25,7 @@ class Gold(Ore):
 
 class Titanium(Ore):
     _ITEM = ItemID.TITANIUM_ORE
-    color = colex.from_hex("#797982")
+    color = colex.from_hex("#B4B2A7")
     texture = ["▒░▒"]
 
 

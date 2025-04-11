@@ -1,4 +1,5 @@
 from math import floor
+from copy import deepcopy
 from typing import assert_never
 
 import colex
@@ -25,10 +26,14 @@ class Player(Collider, Sprite):
     _GRAVITY: float = 0.91
     _JUMP_STRENGTH: float = 4
     _AIR_FRICTION: float = 0.7
+    _HUNGER_RATE: float = 0.25
+    _THIRST_RATE: float = 0.25
+    _OXYGEN_RATE: float = 30
     _WATER_FRICTION: float = 0.3
     _MAX_SPEED: Vec2 = Vec2(2, 2)
-    _AIR_CONSUMPTION: float = 7  # Per second - Base
     _DROWN_DAMAGE: float = 40  # Per second
+    _CRITICAL_DEPTH_DROWN_DAMAGE_MULTIPLIER: float = 5
+    _CRITICAL_DEPTH_AIR_CONSUMPTION_MULTIPLIER: float = 3
     _ACTIONS: tuple[Action, ...] = (  # Order is also precedence - First is highest
         ARROW_UP,  # NOTE: These 2 constants has to be checked before numeric strings
         ARROW_DOWN,
@@ -60,11 +65,11 @@ class Player(Collider, Sprite):
 
     def __init__(self) -> None:
         self.inventory = dict[ItemID, Count]()
-        # Gear - May be base model `None`
+        # Gear - May be base model; `None`
         self._knife = gear_types.Knife(model=None)
         self._diving_mask = gear_types.DivingMask(model=None)
-        self._o2_tank = gear_types.O2Tank(model=ItemID.HIGH_CAPACITY_O2_TANK)
-        self._swimming_suite = gear_types.SwimSuite(model=None)
+        self._o2_tank = gear_types.O2Tank(model=None)
+        self._swimming_suite = gear_types.DivingSuite(model=None)
         # UI
         # NOTE: Current `Camera` has to be initialized before `Player.__init__` is called
         self._health_bar = ui.HealthBar(Camera.current)
@@ -77,14 +82,6 @@ class Player(Collider, Sprite):
         ui.Hotbar2(Camera.current)
         ui.Hotbar3(Camera.current)
         self.crafting_gui = ui.Crafting(Camera.current)
-        # DEV
-        # self.inventory[ItemID.WATER_BOTTLE] = 2
-        # self._thirst_bar.value = 50
-        # self.inventory[ItemID.FRIED_FISH_NUGGET] = 2
-        # self._hunger_bar.value = 50
-        # self.inventory[ItemID.COD_SOUP] = 2
-        # self.inventory[ItemID.BANDAGE] = 2
-        # self._health_bar.value = 20
 
     @property
     def health(self) -> float:
@@ -126,14 +123,7 @@ class Player(Collider, Sprite):
         self.handle_eating()
         self.handle_drinking()
         self.handle_healing()
-        if (
-            self.is_submerged()
-            and not self.is_in_building()
-            and self._diving_mask.model is not None
-        ):
-            self.texture[0] = " [#]"  # Show diver helmet
-        else:
-            self.texture[0] = "  O"  # Show no headgear
+        self.handle_gear_texture()
         # Check if dead
         if self.health == 0:
             self.on_death()
@@ -171,8 +161,13 @@ class Player(Collider, Sprite):
                 case _:
                     assert_never(stat)
 
-    def equip_item(self, item: ItemID) -> None:
-        assert item in gear, f"Item {item} is not in gear registry"
+    def equip_gear(self, item: ItemID) -> None:
+        assert item in gear, f"Gear item {item} is not in gear registry"
+        assert (
+            item in self.inventory
+        ), f"Attempted to equip {item}, but it's not found in inventory"
+        # NOTE: Currently does not allow to keep extra gear crafted
+        del self.inventory[item]
         slot = gear[item][0]
         match slot:
             case Slot.MELEE:
@@ -222,6 +217,11 @@ class Player(Collider, Sprite):
         self_height = self.global_position.y + self.texture_size.y / 2 - 1
         wave_height = ocean.Water.wave_height_at(self.global_position.x)
         return self_height - wave_height > 0
+
+    def is_at_critical_depth(self) -> bool:
+        return (
+            self.global_position.y - ocean.Water.REST_LEVEL > self._swimming_suite.value
+        )
 
     def is_in_building(self) -> bool:
         return isinstance(self.parent, Building)
@@ -320,7 +320,7 @@ class Player(Collider, Sprite):
 
     def handle_oxygen(self) -> None:
         # Restore oxygen if inside a building with O2
-        if (  # Is in building with oxygen
+        if (  # Is in building with oxygen - Type safe
             isinstance(self.parent, Building) and self.parent.HAS_OXYGEN
         ):
             self._oxygen_bar.fill()
@@ -330,29 +330,35 @@ class Player(Collider, Sprite):
             if self._oxygen_bar.value != self._oxygen_bar.MAX_VALUE:
                 self._oxygen_bar.fill()
             return
-        # Decrease health if no oxygen, and spawn particles each tick
+        # Decrease health if no oxygen
         if self._oxygen_bar.value == 0:
-            self.health -= self._DROWN_DAMAGE / settings.FPS  # X HP per second
+            drown_damage = self._DROWN_DAMAGE / settings.FPS  # X HP per second
+            if self.is_at_critical_depth():
+                drown_damage *= self._CRITICAL_DEPTH_DROWN_DAMAGE_MULTIPLIER
+                drown_damage *= 1 - self._o2_tank.value
+            self.health -= drown_damage
             return
         # Decrease oxygen
-        rate = self._AIR_CONSUMPTION / settings.FPS
-        self._oxygen_bar.value -= rate * self._diving_mask.value
-        raw_count = self._oxygen_bar.MAX_VALUE / self._oxygen_bar.MAX_CELL_COUNT
-        # NOTE: Might be fragile logic, but works at least when
-        #       MAX_VALUE = 300 and MAX_CELL_COUNT = 10
-        if self._oxygen_bar.value % raw_count == 0:
+        rate = self._OXYGEN_RATE / settings.FPS
+        if self.is_at_critical_depth():
+            rate *= self._CRITICAL_DEPTH_AIR_CONSUMPTION_MULTIPLIER
+            rate *= 1 - self._o2_tank.value
+        oxygen_bubble_count = self._oxygen_bar.cell_count
+        rate *= 1 - self._diving_mask.value
+        self._oxygen_bar.value -= rate
+        if self._oxygen_bar.cell_count < oxygen_bubble_count:
             Bubble().with_global_position(
                 x=self.global_position.x,
                 y=self.global_position.y - 1,
             )
 
     def handle_hunger(self) -> None:
-        self._hunger_bar.value -= 1 / settings.FPS
+        self._hunger_bar.value -= self._HUNGER_RATE / settings.FPS
         if self._hunger_bar.value == 0:
             self.health -= 1
 
     def handle_thirst(self) -> None:
-        self._thirst_bar.value -= 1 / settings.FPS
+        self._thirst_bar.value -= self._THIRST_RATE / settings.FPS
         if self._thirst_bar.value == 0:
             self.health -= 1
 
@@ -416,6 +422,30 @@ class Player(Collider, Sprite):
             self._current_interactable.collect_into(self.inventory)
             self._current_interactable.queue_free()
             self._current_interactable = None
+
+    def handle_gear_texture(self) -> None:
+        self.texture = deepcopy(self.__class__.texture)
+        if self.is_in_building():
+            return
+        if not self.is_in_ocean():
+            return
+        match self._swimming_suite.model:
+            case ItemID.BASIC_SUITE:
+                self.texture[1] = "/{|}\\"
+            case ItemID.ADVANCED_SUITE:
+                self.texture[1] = "/(|)\\"
+        match self._o2_tank.model:
+            case ItemID.O2_TANK:
+                self.texture[1] = self.texture[1][:2] + "&" + self.texture[1][3:]
+            case ItemID.HIGH_CAPACITY_O2_TANK:
+                self.texture[1] = self.texture[1][:2] + "%" + self.texture[1][3:]
+        if not self.is_submerged():
+            return
+        match self._diving_mask.model:
+            case ItemID.BASIC_DIVING_MASK:
+                self.texture[0] = " {#}"
+            case ItemID.IMPROVED_DIVING_MASK:
+                self.texture[0] = " [#]"
 
     # TODO: Implement
     def on_death(self) -> None:

@@ -26,7 +26,7 @@ class Ladder(Interactable, Sprite):
         self.parent.on_exit()
 
 
-# TODO: Crafting | Fabricatror (Medkit), Radio, O2, Power (Solar), Storage
+# TODO: Radio, O2, Power (Solar), Storage
 class Lifepod(Interactable, Building, Sprite):
     _BOUNDARY = Hitbox(size=Vec2(19, 9), centered=True)
     _OPEN_CEILING = True
@@ -87,11 +87,8 @@ class Lifepod(Interactable, Building, Sprite):
             interactor,
             Player,
         ), "Only `Player` can interact with `Lifepod`"
-        # Reparent without moving
-        location = interactor.global_position
+        # Reparent, then move to entry location
         interactor.parent = self
-        interactor.global_position = location
-        # DEV
         interactor.global_position = self.global_position + self.entry_location
         # Change state and texture
         self.interactable = False

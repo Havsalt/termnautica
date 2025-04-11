@@ -39,9 +39,16 @@ class Smelter(Fabrication, Interactable, Sprite):
             },
         ),
         Recipe(
-            products={ItemID.STEEL_BAR: 1},
+            products={ItemID.STEEL_BAR: 2},
             idgredients={
                 ItemID.IRON_BAR: 2,
+                ItemID.COAL_ORE: 1,
+            },
+        ),
+        Recipe(
+            products={ItemID.STEEL_THREAD: 1},
+            idgredients={
+                ItemID.STEEL_BAR: 1,
                 ItemID.COAL_ORE: 1,
             },
         ),

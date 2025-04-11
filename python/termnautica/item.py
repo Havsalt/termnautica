@@ -45,6 +45,7 @@ class ItemID(Enum):
     STRING = auto()
     CRYSTAL = auto()
     DIAMOND = auto()
+    STEEL_THREAD = auto()
     # Foods, drinks and healing items
     BLADDER_FISH = auto()
     GOLD_FISH = auto()
@@ -80,11 +81,11 @@ class Slot(Enum):
 
 # NOTE: Implement these manually - And add them to type alias
 Damage = NewType("Damage", float)
-BreathModifier = NewType("BreathModifier", float)
-PressureModifier = NewType("PressureModifier", float)
+BreathReduction = NewType("BreathReduction", float)
+PressureReduction = NewType("PressureReduction", float)
 CriticalDepth = NewType("CriticalDepth", float)
 
-type GearStat = Damage | BreathModifier | PressureModifier | CriticalDepth
+type GearStat = Damage | BreathReduction | PressureReduction | CriticalDepth
 
 # Only 1 gear item can be equipped in a slot, and gear can only provide 1 stat
 # The associated value is therefore wrapped in a `NewType` based on what it represents
@@ -103,27 +104,27 @@ gear: dict[ItemID, tuple[Slot, GearStat]] = {
     ),
     ItemID.BASIC_DIVING_MASK: (
         Slot.MASK,
-        BreathModifier(0.7),
+        BreathReduction(0.7),
     ),
     ItemID.IMPROVED_DIVING_MASK: (
         Slot.MASK,
-        BreathModifier(0.5),
+        BreathReduction(0.5),
     ),
     ItemID.BASIC_SUITE: (
         Slot.SUITE,
-        CriticalDepth(0.5),
+        CriticalDepth(40),  # Second depth layer
     ),
     ItemID.ADVANCED_SUITE: (
         Slot.SUITE,
-        CriticalDepth(0.5),
+        CriticalDepth(60),  # Third depth layer
     ),
     ItemID.O2_TANK: (
         Slot.TANK,
-        PressureModifier(0.7),
+        PressureReduction(0.7),
     ),
     ItemID.HIGH_CAPACITY_O2_TANK: (
         Slot.TANK,
-        PressureModifier(0.5),
+        PressureReduction(0.5),
     ),
 }
 

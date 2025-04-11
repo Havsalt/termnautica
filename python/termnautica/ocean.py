@@ -12,7 +12,6 @@ from .utils import groupwise, randf
 type Coordinate = tuple[int, int]
 
 
-WIDTH: int = 500 + 500
 # TODO: Add spawning requirements, like min and max height
 # NOTE: Order will be randomized for each attempt
 # Percent in int | Min 1, Max 100
@@ -57,7 +56,7 @@ class Floor(Sprite):
 
 
 class Water(Sprite):
-    _REST_LEVEL: float = 0  # Where the ocean rests, in world space
+    REST_LEVEL: float = 0  # Where the ocean rests, in world space
     _WAVE_AMPLITUDE: float = 2
     _WAVE_INTERVAL: float = 3 * settings.FPS  # Frames
     _WAVE_DURATION: float = 3 * settings.FPS  # Frames
@@ -88,7 +87,7 @@ class Water(Sprite):
         phi = wave_origin_x / cls._WAVE_LENGTH
         x = cls._wave_time_remaining / cls._WAVE_INTERVAL
         # Asin(cx + phi) + d
-        return cls._WAVE_AMPLITUDE * sin(2 * PI * x + phi) + cls._REST_LEVEL
+        return cls._WAVE_AMPLITUDE * sin(2 * PI * x + phi) + cls.REST_LEVEL
 
     def save_rest_location(self) -> Self:
         self._rest_location = self.global_position
@@ -115,11 +114,11 @@ class Abyss:
 
 
 def generate_water() -> None:
-    for x in range(WIDTH):
+    for x in range(settings.WORLD_WIDTH):
         (
             Water()
             .with_position(
-                x=x - WIDTH // 2,
+                x=x - settings.WORLD_WIDTH // 2,
                 y=random.randint(0, 1),
             )
             .save_rest_location()
@@ -140,7 +139,7 @@ def generate_floor():
     depth = 0
     texture_points: list[Vec2] = []
 
-    for x_position in range(-WIDTH // 2, WIDTH // 2):
+    for x_position in range(-settings.WORLD_WIDTH // 2, settings.WORLD_WIDTH // 2):
         # Check if starting to generate an abyss
         if not Abyss.length_left and random.randint(1, Abyss.SPAWN_CHANCE) == 1:
             Abyss.just_began = True
