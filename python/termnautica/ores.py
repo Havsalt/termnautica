@@ -5,13 +5,14 @@ import colex
 from colex import ColorValue
 from charz import Sprite
 
+from . import settings
 from .props import Collectable, Interactable
 from .item import ItemID
 from .particles import ShineSpark
 
 
 class Ore(Interactable, Collectable, Sprite):
-    _SOUND_COLLECT = pygame.mixer.Sound("assets/sounds/collect/ore.wav")
+    _SOUND_COLLECT = pygame.mixer.Sound(settings.SOUNDS_FOLDER / "collect" / "ore.wav")
     color = colex.DARK_GRAY
     z_index = 1
     texture = ["<Unset Ore Texture>"]
@@ -42,14 +43,16 @@ class Iron(Ore):
 
 
 class Coal(Ore):
-    _SOUND_COLLECT = pygame.mixer.Sound("assets/sounds/collect/coal.wav")
+    _SOUND_COLLECT = pygame.mixer.Sound(settings.SOUNDS_FOLDER / "collect" / "coal.wav")
     _ITEM = ItemID.COAL_ORE
     color = colex.BLACK
     texture = ["▒▓▒"]
 
 
 class Crystal(Ore):
-    _SOUND_COLLECT = pygame.mixer.Sound("assets/sounds/collect/crystal.wav")
+    _SOUND_COLLECT = pygame.mixer.Sound(
+        settings.SOUNDS_FOLDER / "collect" / "crystal.wav"
+    )
     _ITEM = ItemID.CRYSTAL
     _MIN_COLOR_CHANGE_INTERVAL: int = 10
     _MAX_COLOR_CHANGE_INTERVAL: int = 18
@@ -85,7 +88,9 @@ class Crystal(Ore):
 
 
 class Diamond(Ore):
-    _SOUND_COLLECT = pygame.mixer.Sound("assets/sounds/collect/diamond.wav")
+    _SOUND_COLLECT = pygame.mixer.Sound(
+        settings.SOUNDS_FOLDER / "collect" / "diamond.wav"
+    )
     _ITEM = ItemID.DIAMOND
     color = colex.SKY_BLUE
     texture = ["▒▓▒"]

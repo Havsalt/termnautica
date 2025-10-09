@@ -38,6 +38,7 @@ class ItemID(Enum):
     COPPER_BAR = auto()
     IRON_ORE = auto()
     IRON_BAR = auto()
+    IRON_PLATE = auto()
     COAL_ORE = auto()
     STEEL_BAR = auto()
     KELP = auto()
@@ -69,6 +70,8 @@ class ItemID(Enum):
     IMPROVED_DIVING_MASK = auto()
     BASIC_SUITE = auto()
     ADVANCED_SUITE = auto()
+    MAKESHIFT_HARPOON = auto()
+    STEEL_HARPOON = auto()
 
 
 @unique
@@ -77,6 +80,7 @@ class Slot(Enum):
     SUITE = auto()
     TANK = auto()
     MELEE = auto()
+    RANGED = auto()
 
 
 # NOTE: Implement these manually - And add them to type alias
@@ -126,6 +130,7 @@ gear: dict[ItemID, tuple[Slot, GearStat]] = {
         Slot.TANK,
         PressureReduction(0.5),
     ),
+    ItemID.MAKESHIFT_HARPOON: (Slot.RANGED, Damage(3)),
 }
 
 

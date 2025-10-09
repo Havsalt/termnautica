@@ -105,9 +105,9 @@ class Lifepod(Interactable, Building, Sprite):
             self.z_index = 0
 
     def on_exit(self) -> None:
-        assert (
-            self._curr_interactor is not None
-        ), "current interactor is `None` when exited building"
+        assert self._curr_interactor is not None, (
+            "current interactor is `None` when exited building"
+        )
         assert isinstance(self._curr_interactor.parent, Sprite), (
             f"{self._curr_interactor}.parent "
             f"({self._curr_interactor.parent}) is missing `Sprite` base"

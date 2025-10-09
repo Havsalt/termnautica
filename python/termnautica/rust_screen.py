@@ -1,7 +1,8 @@
 from colex import RESET as _RESET
 from charz import Screen as _Screen, Camera as _Camera, Texture as _Texture
 
-from .render import render_all as _render_all
+# Import from the compiled rust code
+from .termnautica import render_all as _render_all
 
 
 __all__ = ["RustScreen"]

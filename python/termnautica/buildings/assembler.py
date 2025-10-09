@@ -31,6 +31,14 @@ class Assembler(Fabrication, Interactable, Sprite):
                 ItemID.FABRIC: 2,
             },
         ),
+        Recipe(
+            products={ItemID.STEEL_HARPOON: 1},
+            idgredients={
+                ItemID.STEEL_THREAD: 2,
+                ItemID.CRYSTAL: 1,
+                ItemID.FABRIC: 3,
+            },
+        ),
     ]
     centered = True
     color = colex.BROWN

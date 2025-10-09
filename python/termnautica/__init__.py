@@ -1,5 +1,6 @@
 import os
 import random
+from pathlib import Path
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
@@ -7,14 +8,16 @@ import pygame
 import keyboard
 from charz import Engine, Camera, Screen, AssetLoader, Vec2
 
-AssetLoader.animation_root = "assets/animations"
-AssetLoader.texture_root = "assets/sprites"
+from . import settings
+
+AssetLoader.animation_root = settings.ANIMATION_FOLDER
+AssetLoader.texture_root = settings.SPRITES_FOLDER
 random.seed(3)  # DEV
 
 pygame.mixer.init()
 
-from rust import RustScreen
-from . import settings, ocean
+from . import ocean
+from .rust_screen import RustScreen
 from .player import Player
 from .buildings.lifepod import Lifepod
 
@@ -38,6 +41,7 @@ class DevCamera(Camera):
 # TODO: LIFEPOD 2/3: Respawn
 # TODO: INVENTORY SIZE: 0/1
 # TODO: PREVENT HEALING ON CRUSHING DEPTHS
+# TODO: Make `HealthCarrier` prop
 
 
 class App(Engine):
@@ -64,7 +68,7 @@ class App(Engine):
         middle_ocean_water = ocean.Water().save_rest_location()
         self.lifepod.parent = middle_ocean_water
         # Music
-        pygame.mixer_music.load("assets/music/main.mp3")
+        pygame.mixer_music.load(settings.MUSIC_FOLDER / "main.mp3")
         pygame.mixer_music.set_volume(0.50)
         # # DEV
         # pygame.mixer_music.set_volume(0)

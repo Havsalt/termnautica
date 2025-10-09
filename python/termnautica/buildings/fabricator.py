@@ -49,6 +49,14 @@ class Fabricator(Fabrication, Interactable, Sprite):
                 ItemID.GOLD_BAR: 1,
             },
         ),
+        Recipe(
+            products={ItemID.MAKESHIFT_HARPOON: 1},
+            idgredients={
+                ItemID.STRING: 1,
+                ItemID.IRON_PLATE: 2,
+                ItemID.GOLD_BAR: 1,
+            },
+        ),
     ]
     centered = True
     color = colex.MEDIUM_AQUAMARINE

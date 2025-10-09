@@ -1,6 +1,6 @@
 [project]
-name = "termnautica"
-version = "0.1.0.dev1"
+name = "havsalt-termnautica"
+version = "0.1.0.dev4"
 description = "Underwater game made using `charz`"
 authors = [
     { name = "Havsalt", email = "77575424+Havsalt@users.noreply.github.com" }
@@ -17,7 +17,7 @@ license = { text = "MIT" }
 termnautica = "termnautica:main"
 
 [build-system]
-requires = ["maturin~=1.0"]
+requires = ["maturin~=1.7.0"]
 build-backend = "maturin"
 
 [tool.rye]
@@ -26,5 +26,5 @@ dev-dependencies = []
 
 [tool.maturin]
 python-source = "python"
-module-name = "rust.render"
+module-name = "termnautica"
 features = ["pyo3/extension-module"]
