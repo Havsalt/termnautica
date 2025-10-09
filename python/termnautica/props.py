@@ -11,6 +11,7 @@ import pygame
 import colex
 from charz import Sprite, Hitbox, Vec2, clamp
 
+from . import settings
 from .item import ItemID, Recipe
 
 
@@ -20,7 +21,7 @@ type Count = int
 class Collectable:
     _ITEM: ItemID
     _SOUND_COLLECT: pygame.mixer.Sound | None = pygame.mixer.Sound(
-        "assets/sounds/collect/default.wav"
+        settings.SOUNDS_FOLDER / "collect" / "default.wav"
     )
 
     def collect_into(self, inventory: dict[ItemID, Count]) -> None:
@@ -160,3 +161,42 @@ class Crafting:
     #     for recipe in self._RECIPES:
     #         if self.can_craft(recipe, inventory):
     #             self.craft(recipe, inventory)
+
+
+class _Marker(Sprite):
+    transparency = " "
+    color = colex.CRIMSON
+    centered = True
+    texture = [
+        " + ",
+        "-+-",
+        " + ",
+    ]
+
+
+class Targetable:
+    _marker: Sprite | None = None
+
+    def gain_target(self) -> None:
+        assert isinstance(self, Sprite), "Missing `Sprite` base"
+
+        if self._marker is None:
+            self._marker = _Marker(self)
+        else:
+            self._marker.show()
+
+    def loose_target(self) -> None:
+        if self._marker is not None:
+            self._marker.hide()
+
+
+class HasHealth:  # Health property might be overridden in subclass
+    _health: float
+
+    @property
+    def health(self) -> float:
+        return self._health
+
+    @health.setter
+    def health(self, value: float) -> None:
+        self._health = value

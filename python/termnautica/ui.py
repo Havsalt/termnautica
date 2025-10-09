@@ -8,6 +8,7 @@ import colex
 from colex import ColorValue
 from charz import Node, Sprite, Label, Vec2, text, clamp
 
+from . import settings
 from .item import ItemID, Recipe
 
 
@@ -63,7 +64,7 @@ class Inventory(UIElement, Sprite):
         )
         self.texture = text.fill_lines(
             [
-                f"- {item.name.capitalize().replace("_", " ")}: {count}"
+                f"- {item.name.capitalize().replace('_', ' ')}: {count}"
                 for item, count in count_sorted
             ]
         )
@@ -151,8 +152,12 @@ class InfoBar(UIElement, Label):
 
 class HealthBar(InfoBar):
     MAX_VALUE = 100
-    _SOUND_HEAL = pygame.mixer.Sound("assets/sounds/ui/health/heal.wav")
-    _SOUND_HURT = pygame.mixer.Sound("assets/sounds/ui/health/hurt.wav")
+    _SOUND_HEAL = pygame.mixer.Sound(
+        settings.SOUNDS_FOLDER / "ui" / "health" / "heal.wav"
+    )
+    _SOUND_HURT = pygame.mixer.Sound(
+        settings.SOUNDS_FOLDER / "ui" / "health" / "hurt.wav"
+    )
     _CHANNEL_HURT = pygame.mixer.Channel(1)
     _LABEL = "Health"
     position = Vec2(_UI_LEFT_OFFSET, -5)
@@ -167,10 +172,14 @@ class HealthBar(InfoBar):
 
 class OxygenBar(InfoBar):
     MAX_VALUE = 100
-    _SOUND_BREATHE = pygame.mixer.Sound("assets/sounds/ui/oxygen/breathe.wav")
-    _SOUND_BUBBLE = pygame.mixer.Sound("assets/sounds/ui/oxygen/bubble.wav")
-    # # DEV
-    # _SOUND_BUBBLE.set_volume(0)
+    _SOUND_BREATHE = pygame.mixer.Sound(
+        settings.SOUNDS_FOLDER / "ui" / "oxygen" / "breathe.wav"
+    )
+    _SOUND_BUBBLE = pygame.mixer.Sound(
+        settings.SOUNDS_FOLDER / "ui" / "oxygen" / "bubble.wav"
+    )
+    # DEV
+    _SOUND_BUBBLE.set_volume(0)
     _CHANNEL_BREATH = pygame.mixer.Channel(2)
     _CHANNEL_BUBBLE = pygame.mixer.Channel(3)
     _LABEL = "O2"
@@ -276,7 +285,7 @@ class Crafting(UIElement, Panel):  # GUI
         lino = 1  # Manual lino, because current recipe needs more place
         for recipe, craftable in all_recipe_states:
             products_text = " + ".join(
-                f" {product_count}x{product.name.replace("_", " ").capitalize()} "
+                f" {product_count}x{product.name.replace('_', ' ').capitalize()} "
                 for product, product_count in recipe.products.items()
             )
             products_color = (  # This might not be the prettiest, but should be ok

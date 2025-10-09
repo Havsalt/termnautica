@@ -7,7 +7,8 @@ import colex
 from colex import ColorValue
 from charz import Sprite, Vec2, text, clamp, sign
 
-from .props import Collectable, Interactable
+from . import settings
+from .props import Collectable, Interactable, Targetable, HasHealth
 from .player import Player
 from .item import ItemID
 from .particles import Blood
@@ -134,12 +135,12 @@ class FishAI:
 
 
 class BaseFish(FishAI, Interactable, Collectable, Sprite):
-    _SOUND_COLLECT = pygame.mixer.Sound("assets/sounds/collect/fish.wav")
+    _SOUND_COLLECT = pygame.mixer.Sound(settings.SOUNDS_FOLDER / "collect" / "fish.wav")
     centered = True
 
 
 class SmallFish(BaseFish):
-    _SOUND_COLLECT = pygame.mixer.Sound("assets/sounds/collect/small_fish.wav")
+    _SOUND_COLLECT = pygame.mixer.Sound(settings.SOUNDS_FOLDER / "collect" / "small_fish.wav")
     _ITEM = ItemID.GOLD_FISH
     color = colex.DARK_SALMON
     texture = ["<><"]
@@ -165,19 +166,19 @@ class WaterFish(BaseFish):
 
 # TODO: Add achievement for this
 class Nemo(BaseFish):
-    _SOUND_COLLECT = pygame.mixer.Sound("assets/sounds/collect/nemo.wav")
+    _SOUND_COLLECT = pygame.mixer.Sound(settings.SOUNDS_FOLDER / "collect" / "nemo.wav")
     _ITEM = ItemID.NEMO
     color = colex.LIGHT_SALMON
     texture = ["<)))<"]
 
 
-class SwordFish(FishAI, Interactable, Sprite):
+class SwordFish(FishAI, HasHealth, Interactable, Targetable, Sprite):
     _REACH = 6  # Shorter reach to attack it
     _REACH_CENTER = Vec2(6, 0)
     _DAMAGE: int = 15
     _ATTACK_INTERVAL: int = 10  # Frames
-    _SOUND_HIT = pygame.mixer.Sound("assets/sounds/hit.wav")
-    _SOUND_LURK = pygame.mixer.Sound("assets/sounds/hostile_fish_lurk.wav")
+    _SOUND_HIT = pygame.mixer.Sound(settings.SOUNDS_FOLDER / "hit.wav")
+    _SOUND_LURK = pygame.mixer.Sound(settings.SOUNDS_FOLDER / "hostile_fish_lurk.wav")
     _CHANNEL_LURK = pygame.mixer.Channel(4)
     _SOUND_LURK_CHANCE: int = 2000  # 1 out of X chance
     _STEALTH_COLOR: ColorValue = colex.from_hex("#2B2B2B")
@@ -191,6 +192,16 @@ class SwordFish(FishAI, Interactable, Sprite):
     _health: float = 5
     _attack_cooldown: int = 0
     _is_highlighted: bool = False
+
+    @property
+    def health(self) -> float:
+        return self._health
+
+    @health.setter
+    def health(self, value: float) -> None:
+        self._health = value
+        if self._health <= 0:
+            self.queue_free()
 
     def on_interact(self, actor: Sprite) -> None:
         assert isinstance(actor, Player), "Only `Player` can attack `SwordFish`"

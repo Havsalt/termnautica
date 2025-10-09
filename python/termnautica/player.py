@@ -6,8 +6,8 @@ import colex
 import keyboard
 from charz import Camera, Sprite, Collider, Hitbox, Vec2
 
-from . import gear_types, settings, ui, ocean
-from .props import Collectable, Interactable, Building
+from . import gear_types, projectiles, settings, ui, ocean
+from .props import Collectable, Interactable, Building, Targetable
 from .fabrication import Fabrication
 from .particles import Bubble, Blood
 from .item import ItemID, Slot, ConsumableStat, gear, consumables
@@ -34,6 +34,7 @@ class Player(Collider, Sprite):
     _DROWN_DAMAGE: float = 40  # Per second
     _CRITICAL_DEPTH_DROWN_DAMAGE_MULTIPLIER: float = 5
     _CRITICAL_DEPTH_AIR_CONSUMPTION_MULTIPLIER: float = 3
+    _RANGED_REACH: float = 40
     _ACTIONS: tuple[Action, ...] = (  # Order is also precedence - First is highest
         ARROW_UP,  # NOTE: These 2 constants has to be checked before numeric strings
         ARROW_DOWN,
@@ -41,6 +42,7 @@ class Player(Collider, Sprite):
         "1",
         "2",
         "3",
+        "r",
         "space",
         "tab",
         "enter",
@@ -62,6 +64,7 @@ class Player(Collider, Sprite):
     _current_action: Action | None = None
     _key_just_pressed: bool = False
     _current_interactable: Sprite | None = None
+    _current_targetable: Sprite | None = None
 
     def __init__(self) -> None:
         self.inventory = dict[ItemID, Count]()
@@ -70,6 +73,7 @@ class Player(Collider, Sprite):
         self._diving_mask = gear_types.DivingMask(model=None)
         self._o2_tank = gear_types.O2Tank(model=None)
         self._swimming_suite = gear_types.DivingSuite(model=None)
+        self._harpoon = gear_types.Harpoon(model=ItemID.MAKESHIFT_HARPOON)
         # UI
         # NOTE: Current `Camera` has to be initialized before `Player.__init__` is called
         self._health_bar = ui.HealthBar(Camera.current)
@@ -115,6 +119,8 @@ class Player(Collider, Sprite):
         self.handle_movement()
         self.handle_interact_selection()
         self.handle_interact()
+        self.handle_target_selection()
+        self.handle_target()
         self.handle_collect()
         self.handle_oxygen()
         self.handle_hunger()
@@ -129,9 +135,9 @@ class Player(Collider, Sprite):
             self.on_death()
 
     def consume_item(self, item: ItemID, count: Count = 1) -> None:
-        assert (
-            item in consumables
-        ), f"All consumable items require additional metadata, for item: {item}"
+        assert item in consumables, (
+            f"All consumable items require additional metadata, for item: {item}"
+        )
         if item not in self.inventory:
             raise KeyError(
                 f"Attempted removing {count} {item.name},"
@@ -163,9 +169,9 @@ class Player(Collider, Sprite):
 
     def equip_gear(self, item: ItemID) -> None:
         assert item in gear, f"Gear item {item} is not in gear registry"
-        assert (
-            item in self.inventory
-        ), f"Attempted to equip {item}, but it's not found in inventory"
+        assert item in self.inventory, (
+            f"Attempted to equip {item}, but it's not found in inventory"
+        )
         # NOTE: Currently does not allow to keep extra gear crafted
         del self.inventory[item]
         slot = gear[item][0]
@@ -178,6 +184,8 @@ class Player(Collider, Sprite):
                 self._swimming_suite.model = item
             case Slot.TANK:
                 self._o2_tank.model = item
+            case Slot.RANGED:
+                self._harpoon.model = item
             case _:
                 assert_never(slot)
 
@@ -408,6 +416,64 @@ class Player(Collider, Sprite):
         ):
             # TODO: Check for z_index change, so that it respects z_index change in on_interact
             self._current_interactable.on_interact(self)
+
+    def handle_target_selection(self) -> None:
+        proximite_targetables: list[tuple[float, Targetable]] = []
+        global_point = self.global_position  # Store property value outside loop
+        reach_squared = self._RANGED_REACH * self._RANGED_REACH
+        # TODO: Iterate over a smaller collection
+        for node in Sprite.texture_instances.values():
+            if (
+                isinstance(node, Targetable)
+                and (distance := global_point.distance_squared_to(node.global_position))
+                < reach_squared
+            ):  # I know this syntax might be a bit too much,
+                # but know that it made it easier to split logic into mixin class
+                proximite_targetables.append((distance, node))
+
+        # Highlight closest interactable - Using DSU
+        if proximite_targetables:
+            proximite_targetables.sort(key=lambda pair: pair[0])
+            # Allow this because `Interactable` should always be used with `Sprite`
+            if isinstance(self._current_targetable, Targetable):
+                # Reset color to class color
+                self._current_targetable.gain_target()
+            # Reverse color of current interactable
+            first = proximite_targetables[0][1]
+            assert isinstance(
+                first,
+                Sprite,
+            ), f"{first.__class__} is missing `Sprite` base"
+            self._current_targetable = first
+            # TODO: Do Harpoon aiming here, and fire if key pressed
+            if (
+                self._key_just_pressed
+                and self._current_action == "r"
+                and self._harpoon.model is not None
+            ):
+                harpoon_info = gear[self._harpoon.model]
+                damage = harpoon_info[1]
+                projectiles.HarpoonSpear(
+                    position=self.global_position,
+                ).with_target(first).with_damage(damage)
+            # self._current_targetable.grab_focus()
+            # self._current_targetable.when_selected(self)
+        # Or unselect last interactable that *was* in reach
+        elif self._current_targetable is not None:
+            assert isinstance(self._current_targetable, Targetable)
+            self._current_targetable.loose_target()
+            self._current_targetable = None
+
+    def handle_target(self) -> None:
+        if self._current_targetable is None:
+            return
+        assert isinstance(self._current_targetable, Targetable)
+        # Trigger interaction function
+        if self._key_just_pressed and (
+            self._current_action == "e" or self._current_action == "enter"
+        ):
+            # TODO: Check for z_index change, so that it respects z_index change in on_interact
+            self._current_targetable.gain_target()
 
     def handle_collect(self) -> None:
         if self._current_interactable is None:

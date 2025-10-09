@@ -23,9 +23,9 @@ class Gear:
         model: ItemID | None,
     ) -> None:
         # Check for valid oxygen tank
-        assert model is None or (
-            model in gear and self._SLOT is gear[model][0]
-        ), f"Invalid model: {model}"
+        assert model is None or (model in gear and self._SLOT is gear[model][0]), (
+            f"Invalid model: {model}"
+        )
         self._model = model
 
     @property
@@ -67,3 +67,8 @@ class DivingMask(Gear):
 class O2Tank(Gear):
     _SLOT = Slot.TANK
     _STAT_DEFAULT_VALUE = PressureReduction(0.00)
+
+
+class Harpoon(Gear):
+    _SLOT = Slot.RANGED
+    _STAT_DEFAULT_VALUE = Damage(0)
