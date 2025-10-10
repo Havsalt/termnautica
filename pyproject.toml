@@ -7,7 +7,7 @@ module-name = "termnautica"
 
 [project]
 name = "havsalt-termnautica"
-version = "0.1.0.dev5"
+version = "0.1.0.dev6"
 description = "Underwater game made using `charz`"
 authors = [
     { name = "Havsalt", email = "77575424+Havsalt@users.noreply.github.com" }
