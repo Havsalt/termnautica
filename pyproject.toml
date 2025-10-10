@@ -13,7 +13,7 @@ authors = [
     { name = "Havsalt", email = "77575424+Havsalt@users.noreply.github.com" }
 ]
 dependencies = [
-    "charz-rust>=0.2.0",
+    "charz-rust>=0.2.1",
     "charz[all]~=0.1.1",
     "pygame~=2.6",
 ]
