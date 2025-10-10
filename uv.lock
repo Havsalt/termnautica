@@ -34,13 +34,14 @@ wheels = [
 
 [[package]]
 name = "charz-rust"
-version = "0.2.0"
+version = "0.2.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "charz" },
 ]
+sdist = { url = "https://files.pythonhosted.org/packages/7b/13/712c65743ae89a580354049d7755a97b6ac1d27d13036dc2b0c5324baa1b/charz_rust-0.2.2.tar.gz", hash = "sha256:08531399065dce01064bea33e628a23a0dcf3e98eaee11e2751f3b3ae958201b", size = 54718, upload-time = "2025-10-10T08:07:52.566Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ee/72/28e8481dcd99e15f67af8ed69f84d2136086f50407c12f58553eaed031cb/charz_rust-0.2.0-cp310-abi3-win_amd64.whl", hash = "sha256:fc49e9f82da4e5afafd21883e6684c444d3f2111c3425267bb272a81cfbd51c4", size = 115414, upload-time = "2025-07-21T00:02:11.22Z" },
+    { url = "https://files.pythonhosted.org/packages/d7/22/7804973e3fb8f648faf0acc0a14b275a86e75cc5f46f4c4e81bbf8c7d39f/charz_rust-0.2.2-cp310-abi3-win_amd64.whl", hash = "sha256:b704954aa025958481d0871d5ec76fc77b8ec57759431f32058ed33efcf311dd", size = 115913, upload-time = "2025-10-10T08:07:51.326Z" },
 ]
 
 [[package]]
@@ -65,7 +66,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "charz", extras = ["all"], specifier = "~=0.1.1" },
-    { name = "charz-rust", specifier = ">=0.2.0" },
+    { name = "charz-rust", specifier = ">=0.2.2" },
     { name = "pygame", specifier = "~=2.6" },
 ]
 
