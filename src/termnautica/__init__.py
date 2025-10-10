@@ -1,15 +1,15 @@
 import os
 import random
-from pathlib import Path
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 import pygame
 import keyboard
-from charz import Engine, Camera, AssetLoader, Vec2
-from charz_rust import RustScreen
+import colex
+from charz import Engine, Clock, Camera, AssetLoader, Vec2
 
 from . import settings
+from .split_screen import FastSplitScreen
 
 AssetLoader.animation_root = settings.ANIMATION_FOLDER
 AssetLoader.texture_root = settings.SPRITES_FOLDER
@@ -18,7 +18,7 @@ random.seed(3)  # DEV
 pygame.mixer.init()
 
 from . import ocean
-from .player import Player
+from .player import Player, Player1, Player2
 from .buildings.lifepod import Lifepod
 
 
@@ -45,23 +45,37 @@ class DevCamera(Camera):
 
 
 class App(Engine):
-    fps = settings.FPS
-    screen = RustScreen(
+    clock = Clock(fps=settings.FPS)
+    Camera.current = Camera(
+        position=Vec2(-2, -2),
+        mode=Camera.MODE_CENTERED,
+    )
+    second_camera: Camera = Camera(
+        position=Vec2(-2, -2),
+        mode=Camera.MODE_CENTERED,
+    )
+    screen = FastSplitScreen(
         auto_resize=True,
         initial_clear=True,
         margin_right=0,
         margin_bottom=0,
+        second_camera=second_camera,
+        delimiter=" ",
+        delimiter_color=colex.REVERSE + colex.WHITE,
     )
 
     def __init__(self) -> None:
-        Camera.current = (
-            Camera()
-            .with_mode(Camera.MODE_CENTERED)
-            .with_position(Vec2(-2, -2))
-        )
-        self.player = Player()
+        ## Set up co-op players and cameras
+        self.player = Player1()
         # Attatch new camera to player, *after* player has been created
         Camera.current.parent = self.player
+        just_current_camera = Camera.current
+        Camera.current = self.second_camera
+        self.player_2 = Player2()
+        self.second_camera.parent = self.player_2
+        Camera.current = just_current_camera
+        # Camera.current = DevCamera()
+        ## Environment and structures
         # Attatch lifepod to waving water
         ocean.generate_floor()
         ocean.generate_water()
@@ -69,14 +83,14 @@ class App(Engine):
         self.lifepod = Lifepod()
         middle_ocean_water = ocean.Water().save_rest_location()
         self.lifepod.parent = middle_ocean_water
-        # Music
+        ## Music
         pygame.mixer_music.load(settings.MUSIC_FOLDER / "main.mp3")
         pygame.mixer_music.set_volume(0.50)
-        # # DEV
+        ##DEV
         # pygame.mixer_music.set_volume(0)
         pygame.mixer_music.play(-1)  # Infinite loop
         # pygame.mixer.set_num_channels(64)
-        # DEV: Stuff stashed away in this method
+        # Dev stuff stashed away in this method
         self.dev()
 
     def dev(self) -> None:
@@ -124,6 +138,10 @@ class App(Engine):
         self.dev_update()  # DEV
 
     def dev_update(self) -> None:
+        if keyboard.is_pressed("8"):
+            self.screen.delimiter_offset -= 1  # type: ignore
+        if keyboard.is_pressed("9"):
+            self.screen.delimiter_offset += 1  # type: ignore
         from .buildings.hallway import Hallway
         from .item import ItemID
 

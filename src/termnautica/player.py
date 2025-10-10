@@ -1,6 +1,6 @@
 from math import floor
 from copy import deepcopy
-from typing import assert_never
+from typing import NamedTuple, assert_never
 
 import colex
 import keyboard
@@ -14,12 +14,41 @@ from .item import ItemID, Slot, ConsumableStat, gear, consumables
 from .utils import move_toward
 
 
+type ActionName = str
 type Action = str | int
 type Count = int
 
 
 ARROW_UP: int = 72
 ARROW_DOWN: int = 80
+
+
+class Actions(NamedTuple):  # Order is also precedence - First is highest
+    # NOTE: These 2 constants has to be checked before numeric strings
+    scroll_up: Action = ARROW_UP
+    scroll_down: Action = ARROW_DOWN
+
+    interact: Action = "e"
+    eat: Action = "1"
+    drink: Action = "2"
+    heal: Action = "3"
+    throw_harpoon: Action = "r"
+    jump: Action = "space"
+    tab: Action = "tab"
+    confirm: Action = "enter"
+    scroll_up2: Action = "k"
+    scroll_down2: Action = "j"
+
+
+class KeyModifiers(NamedTuple):
+    shift: Action = "shift"
+
+
+class MoveKeys(NamedTuple):
+    left: Action = "a"
+    right: Action = "d"
+    up: Action = "w"
+    down: Action = "s"
 
 
 class Player(ColliderComponent, Sprite):
@@ -35,21 +64,9 @@ class Player(ColliderComponent, Sprite):
     _CRITICAL_DEPTH_DROWN_DAMAGE_MULTIPLIER: float = 5
     _CRITICAL_DEPTH_AIR_CONSUMPTION_MULTIPLIER: float = 3
     _RANGED_REACH: float = 40
-    _ACTIONS: tuple[Action, ...] = (  # Order is also precedence - First is highest
-        ARROW_UP,  # NOTE: These 2 constants has to be checked before numeric strings
-        ARROW_DOWN,
-        "e",
-        "1",
-        "2",
-        "3",
-        "r",
-        "space",
-        "tab",
-        "enter",
-        "j",
-        "k",
-    )
-    position = Vec2(17, -18)
+    _ACTIONS: Actions = Actions()
+    _KEY_MODIFIERS: KeyModifiers = KeyModifiers()
+    _MOVE_KEYS: MoveKeys = MoveKeys()
     hitbox = Hitbox(size=Vec2(5, 3), centered=True)
     z_index = 1
     color = colex.AQUA
@@ -190,7 +207,7 @@ class Player(ColliderComponent, Sprite):
                 assert_never(slot)
 
     def handle_eating(self) -> None:
-        if not (self._current_action == "1" and self._key_just_pressed):
+        if not (self._current_action == self._ACTIONS.eat and self._key_just_pressed):
             return
 
         for item in self.inventory:
@@ -199,7 +216,7 @@ class Player(ColliderComponent, Sprite):
                 break
 
     def handle_drinking(self) -> None:
-        if not (self._current_action == "2" and self._key_just_pressed):
+        if not (self._current_action == self._ACTIONS.drink and self._key_just_pressed):
             return
 
         for item in self.inventory:
@@ -208,7 +225,7 @@ class Player(ColliderComponent, Sprite):
                 break
 
     def handle_healing(self) -> None:
-        if not (self._current_action == "3" and self._key_just_pressed):
+        if not (self._current_action == self._ACTIONS.heal and self._key_just_pressed):
             return
 
         for item in self.inventory:
@@ -235,7 +252,6 @@ class Player(ColliderComponent, Sprite):
         return isinstance(self.parent, Building)
 
     def is_colliding_with_ocean_floor(self) -> bool:
-        # FIXME: Find out why it says `int | float` and not just `int` for `<Vec2i>.x`
         center = self.global_position
         if self.centered:
             center -= self.get_texture_size() / 2
@@ -270,22 +286,28 @@ class Player(ColliderComponent, Sprite):
         if not isinstance(self._current_interactable, Fabrication):
             return
         if (
-            self._current_action == "j"
-            or self._current_action == ARROW_DOWN
-            or (self._current_action == "tab" and not keyboard.is_pressed("shift"))
+            self._current_action == self._ACTIONS.scroll_down
+            or self._current_action == self._ACTIONS.scroll_down2
+            or (
+                self._current_action == self._ACTIONS.tab
+                and not keyboard.is_pressed(self._KEY_MODIFIERS.shift)
+            )
         ):
             self._current_interactable.attempt_select_next_recipe()
         elif (
-            self._current_action == "k"
-            or self._current_action == ARROW_UP
-            or (self._current_action == "tab" and keyboard.is_pressed("shift"))
+            self._current_action == self._ACTIONS.scroll_up
+            or self._current_action == self._ACTIONS.scroll_up2
+            or (
+                self._current_action == self._ACTIONS.tab
+                and keyboard.is_pressed(self._KEY_MODIFIERS.shift)
+            )
         ):
             self._current_interactable.attempt_select_previous_recipe()
 
     def handle_movement_in_building(self, velocity: Vec2) -> None:
         assert isinstance(self.parent, Building)
         # TODO: Check if is on floor first
-        if self._current_action == "space" and self._key_just_pressed:
+        if self._current_action == self._ACTIONS.jump and self._key_just_pressed:
             self._y_speed = -self._JUMP_STRENGTH
         combined_velocity = Vec2(velocity.x, self._y_speed).clamp(
             -self._MAX_SPEED,
@@ -297,8 +319,10 @@ class Player(ColliderComponent, Sprite):
 
     def handle_movement(self) -> None:
         velocity = Vec2(
-            keyboard.is_pressed("d") - keyboard.is_pressed("a"),
-            keyboard.is_pressed("s") - keyboard.is_pressed("w"),
+            keyboard.is_pressed(self._MOVE_KEYS.right)
+            - keyboard.is_pressed(self._MOVE_KEYS.left),
+            keyboard.is_pressed(self._MOVE_KEYS.down)
+            - keyboard.is_pressed(self._MOVE_KEYS.up),
         )
         # Is in builindg movement
         if self.is_in_building():
@@ -412,7 +436,8 @@ class Player(ColliderComponent, Sprite):
         assert isinstance(self._current_interactable, Interactable)
         # Trigger interaction function
         if self._key_just_pressed and (
-            self._current_action == "e" or self._current_action == "enter"
+            self._current_action == self._ACTIONS.interact
+            or self._current_action == self._ACTIONS.confirm
         ):
             # TODO: Check for z_index change, so that it respects z_index change in on_interact
             self._current_interactable.on_interact(self)
@@ -448,7 +473,7 @@ class Player(ColliderComponent, Sprite):
             # TODO: Do Harpoon aiming here, and fire if key pressed
             if (
                 self._key_just_pressed
-                and self._current_action == "r"
+                and self._current_action == self._ACTIONS.throw_harpoon
                 and self._harpoon.model is not None
             ):
                 harpoon_info = gear[self._harpoon.model]
@@ -470,7 +495,8 @@ class Player(ColliderComponent, Sprite):
         assert isinstance(self._current_targetable, Targetable)
         # Trigger interaction function
         if self._key_just_pressed and (
-            self._current_action == "e" or self._current_action == "enter"
+            self._current_action == self._ACTIONS.interact
+            or self._current_action == self._ACTIONS.confirm
         ):
             # TODO: Check for z_index change, so that it respects z_index change in on_interact
             self._current_targetable.gain_target()
@@ -483,7 +509,8 @@ class Player(ColliderComponent, Sprite):
         # Collect collectable that is selected
         # `self._current_interactable` is already in reach
         if self._key_just_pressed and (
-            self._current_action == "e" or self._current_action == "enter"
+            self._current_action == self._ACTIONS.interact
+            or self._current_action == self._ACTIONS.confirm
         ):
             self._current_interactable.collect_into(self.inventory)
             self._current_interactable.queue_free()
@@ -522,3 +549,44 @@ class Player(ColliderComponent, Sprite):
         self._current_interactable = None
         self._current_action = None
         self._key_just_pressed = False
+
+
+# The following player classes below are for co-op mode
+
+
+class Player1(Player):
+    position = Vec2(17, -18)
+    color = colex.CYAN
+    _ACTIONS = Actions(
+        confirm="q",
+    )
+    _KEY_MODIFIERS = KeyModifiers()
+    _MOVE_KEYS = MoveKeys()
+
+
+class Player2(Player):
+    position = Vec2(-15, -30)
+    color = colex.YELLOW
+    _ACTIONS = Actions(
+        interact="ø",
+        confirm="m",
+        eat="y",
+        drink="u",
+        heal="o",
+        tab="i",
+        jump="p",
+        scroll_up=",",
+        scroll_down=".",
+        scroll_up2="+",
+        scroll_down2="0",
+        throw_harpoon="-",
+    )
+    _KEY_MODIFIERS = KeyModifiers(
+        shift="alt gr",
+    )
+    _MOVE_KEYS = MoveKeys(
+        left="h",
+        right="l",
+        down="j",
+        up="k",
+    )
