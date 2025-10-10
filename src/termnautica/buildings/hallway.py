@@ -1,10 +1,10 @@
 import colex
-from charz import Sprite, Collider, Hitbox, Node2D, Vec2, load_texture
+from charz import Sprite, ColliderComponent, Hitbox, Node2D, Vec2, load_texture
 
 from .airlock import Airlock
 
 
-class HallwayRoof(Collider, Node2D):
+class HallwayRoof(ColliderComponent, Node2D):
     hitbox = Hitbox(size=Vec2(29, 1))
 
 

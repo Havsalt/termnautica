@@ -41,7 +41,7 @@ class Inventory(UIElement, Sprite):
         self._inventory_ref = inventory_ref
         self._update_texture()
 
-    def update(self, _delta: float) -> None:
+    def update(self) -> None:
         # Remove items that has a count of 0
         for item, count in tuple(self._inventory_ref.items()):
             if count == 0:
@@ -307,8 +307,8 @@ class Crafting(UIElement, Panel):  # GUI
                 z_index=self.z_index + 1,
                 color=products_color,
                 position=Vec2(
-                    -self.texture_size.x // 2 - 1,
-                    -self.texture_size.y // 2 + lino,
+                    -self.get_texture_size().x // 2 - 1,
+                    -self.get_texture_size().y // 2 + lino,
                 ),
             )
             lino += 1
@@ -334,8 +334,8 @@ class Crafting(UIElement, Panel):  # GUI
                         z_index=self.z_index + 1,
                         color=idgredient_color,
                         position=Vec2(
-                            -self.texture_size.x // 2 - 1,
-                            -self.texture_size.y // 2 + lino,
+                            -self.get_texture_size().x // 2 - 1,
+                            -self.get_texture_size().y // 2 + lino,
                         ),
                     )
                     self._info_labels.append(idgredient_label)

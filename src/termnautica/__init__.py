@@ -6,7 +6,8 @@ os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 import pygame
 import keyboard
-from charz import Engine, Camera, Screen, AssetLoader, Vec2
+from charz import Engine, Camera, AssetLoader, Vec2
+from charz_rust import RustScreen
 
 from . import settings
 
@@ -17,7 +18,6 @@ random.seed(3)  # DEV
 pygame.mixer.init()
 
 from . import ocean
-from .rust_screen import RustScreen
 from .player import Player
 from .buildings.lifepod import Lifepod
 
@@ -27,7 +27,7 @@ from .buildings.lifepod import Lifepod
 
 
 class DevCamera(Camera):
-    def update(self, _delta: float) -> None:
+    def update(self) -> None:
         if keyboard.is_pressed("a"):
             self.position.x -= 1
         if keyboard.is_pressed("d"):
@@ -49,17 +49,19 @@ class App(Engine):
     screen = RustScreen(
         auto_resize=True,
         initial_clear=True,
+        margin_right=0,
+        margin_bottom=0,
     )
 
     def __init__(self) -> None:
-        camera = (
+        Camera.current = (
             Camera()
-            .with_mode(Camera.MODE_CENTERED | Camera.MODE_INCLUDE_SIZE)
-            .as_current()
+            .with_mode(Camera.MODE_CENTERED)
+            .with_position(Vec2(-2, -2))
         )
         self.player = Player()
-        # Attatch camera to player
-        camera.parent = self.player
+        # Attatch new camera to player, *after* player has been created
+        Camera.current.parent = self.player
         # Attatch lifepod to waving water
         ocean.generate_floor()
         ocean.generate_water()
@@ -113,11 +115,10 @@ class App(Engine):
         #     f.speed_y = -20
         # FishSpawner().with_global_position(x=20, y=-10)
 
-    def update(self, _delta: float) -> None:
+    def update(self) -> None:
         ocean.Water.advance_wave_time()
         if keyboard.is_pressed("esc"):
             self.is_running = False
-            self.screen.clear()
             pygame.quit()
 
         self.dev_update()  # DEV

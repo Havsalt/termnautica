@@ -46,11 +46,11 @@ class Bubble(AnimatedSprite):
 
     def is_submerged(self) -> bool:
         _ensure_ocean_water()
-        self_height = self.global_position.y - self.texture_size.y / 2
+        self_height = self.global_position.y - self.get_texture_size().y / 2
         wave_height = Water.wave_height_at(self.global_position.x)
         return self_height - wave_height > 0
 
-    def update(self, _delta: float) -> None:
+    def update(self) -> None:
         self.color = random.choice(self._COLORS)
         self.position.y -= self._FLOAT_SPEED
         if not self.is_submerged() and self.current_animation != self.animations.Pop:
@@ -82,7 +82,7 @@ class Particle(Sprite):
         )
         self._velocity = direction * self._INITAL_SPEED
 
-    def update(self, _delta: float) -> None:
+    def update(self) -> None:
         self._time_remaining -= 1
         if self._time_remaining <= 0:
             self.queue_free()

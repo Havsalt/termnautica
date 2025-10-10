@@ -100,8 +100,8 @@ class Building:
         else:
             start = Vec2.ZERO
             end = self._BOUNDARY.size.copy()
-        start += node.texture_size / 2
-        end -= node.texture_size / 2
+        start += node.get_texture_size() / 2
+        end -= node.get_texture_size() / 2
 
         # Apply gravity
         velocity.y += 1

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, assert_never
 import pygame
 import colex
 from colex import ColorValue
-from charz import Sprite, Vec2, text, clamp, sign
+from charz import Sprite, Scene, Group, Vec2, text, clamp, sign
 
 from . import settings
 from .props import Collectable, Interactable, Targetable, HasHealth
@@ -22,8 +22,8 @@ else:
 
 
 # Expand text flipping db
-text._h_conversions["»"] = "«"
-text._h_conversions["«"] = "»"
+text._horizontal_conversions["»"] = "«"
+text._horizontal_conversions["«"] = "»"
 
 
 def _ensure_ocean() -> None:
@@ -63,7 +63,7 @@ class FishAI:
     _action_time_remaining: int = 0
     assert _ACCELERATION > _FRICTION, "Invalid constants"
 
-    def update(self, _delta: float) -> None:
+    def update(self) -> None:
         assert isinstance(self, Sprite), f"`Sprite` base missing for {self}"
 
         if self.is_submerged():  # Activate AI when in water
@@ -102,7 +102,7 @@ class FishAI:
     def is_submerged(self) -> bool:
         _ensure_ocean()  # Lazy load `OceanWater`
         assert isinstance(self, Sprite), f"`Sprite` base missing for {self}"
-        self_height = self.global_position.y - self.texture_size.y / 2
+        self_height = self.global_position.y - self.get_texture_size().y / 2
         wave_height = ocean.Water.wave_height_at(self.global_position.x)
         return self_height - wave_height > 0
 
@@ -140,7 +140,9 @@ class BaseFish(FishAI, Interactable, Collectable, Sprite):
 
 
 class SmallFish(BaseFish):
-    _SOUND_COLLECT = pygame.mixer.Sound(settings.SOUNDS_FOLDER / "collect" / "small_fish.wav")
+    _SOUND_COLLECT = pygame.mixer.Sound(
+        settings.SOUNDS_FOLDER / "collect" / "small_fish.wav"
+    )
     _ITEM = ItemID.GOLD_FISH
     color = colex.DARK_SALMON
     texture = ["<><"]
@@ -224,7 +226,7 @@ class SwordFish(FishAI, HasHealth, Interactable, Targetable, Sprite):
         super().loose_focus()
         self._is_highlighted = False
 
-    def update(self, _delta: float) -> None:
+    def update(self) -> None:
         # TODO: Add spatial sound
         if (
             random.randint(1, self._SOUND_LURK_CHANCE) == 1
@@ -232,13 +234,13 @@ class SwordFish(FishAI, HasHealth, Interactable, Targetable, Sprite):
         ):
             self._CHANNEL_LURK.play(self._SOUND_LURK)
         # TODO: Refactor this quick solution
-        super().update(0)  # Process `FishAI`
+        super().update()  # Process `FishAI`
         if not self.is_submerged():
             return
         self._attack_cooldown -= 1
         if self._attack_cooldown >= 0:
             return
-        for node in Sprite.texture_instances.values():
+        for node in Scene.current.groups[Group.TEXTURE].values():
             if isinstance(node, Player):
                 if node.is_in_building():
                     self.color = self.__class__.color

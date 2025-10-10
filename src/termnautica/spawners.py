@@ -4,7 +4,7 @@ from types import UnionType, get_original_bases
 from typing import Any, Self, get_origin, get_args, assert_never
 
 import colex
-from charz import Sprite, Vec2
+from charz import Scene, Group, Sprite, Vec2
 
 from . import fish, ores, ocean
 from .kelp import Kelp
@@ -43,13 +43,13 @@ class Spawner[T: Sprite](Sprite):
         # NOTE: SIDE EFFECT: Remove from `_spawned_instances` if instance not alive
         count = 0
         for instance in self._spawned_instances:  # O(n) loop
-            if instance.uid in Sprite.texture_instances:  # O(1) lookup
+            if instance.uid in Scene.current.groups[Group.TEXTURE]:  # O(1) lookup
                 count += 1
             else:
                 self._spawned_instances.remove(instance)
         return count
 
-    def update(self, _delta: float) -> None:
+    def update(self) -> None:
         self._time_until_spawn -= 1
         if self.check_active_spawns_count() < self._MAX_ACTIVE_SPAWNS:
             if self._time_until_spawn <= 0:

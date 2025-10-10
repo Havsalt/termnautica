@@ -1,26 +1,25 @@
 import colex
-from charz import Sprite, Collider, Hitbox, Vec2, load_texture
+from charz import Sprite, ColliderComponent, Hitbox, Vec2, load_texture
 
 from ..player import Player
 from ..props import Interactable
 
 
-class Airlock(Interactable, Collider, Sprite):
+class Airlock(Interactable, ColliderComponent, Sprite):
     hitbox = Hitbox(size=Vec2(1, 3))
     color = colex.LIGHT_GRAY
     texture = load_texture("airlock/closed.txt")
-    disabled: bool = False
 
     def on_interact(self, interactor: Sprite) -> None:
         assert isinstance(
             interactor,
             Player,
         ), "Only `Player` can interact with `Airlock`"
-        self.disabled = not self.disabled
+        self.hitbox.disabled = not self.hitbox.disabled
         # TEMP FIX:
-        interactor.disabled = self.disabled
+        interactor.hitbox.disabled = self.hitbox.disabled
 
-        if self.disabled:
+        if self.hitbox.disabled:
             self.texture = load_texture("airlock/open.txt")
         else:
             self.texture = load_texture("airlock/closed.txt")

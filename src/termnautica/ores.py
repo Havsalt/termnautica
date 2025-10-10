@@ -68,7 +68,7 @@ class Crystal(Ore):
     _color_change_cooldown: int = 0
     _shine_cooldown: int = 0
 
-    def update(self, _delta: float) -> None:
+    def update(self) -> None:
         self._color_change_cooldown -= 1
         if self._color_change_cooldown <= 0:
             self._color_change_cooldown = random.randint(

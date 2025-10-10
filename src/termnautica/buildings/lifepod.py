@@ -47,7 +47,7 @@ class Lifepod(Interactable, Building, Sprite):
             self,
             text="Lifepod",
             color=colex.ITALIC + colex.SLATE_GRAY,
-            position=self.texture_size / -2,
+            position=self.get_texture_size() / -2,
         )
         self._name.position.y -= 3
         self._stations = [
@@ -100,7 +100,7 @@ class Lifepod(Interactable, Building, Sprite):
             child.interactable = True
 
     # TODO: Improve
-    def update(self, _delta: float) -> None:
+    def update(self) -> None:
         if not self.interactable:
             self.z_index = 0
 

@@ -8,14 +8,14 @@ from . import ocean
 
 
 # Expand text flipping DB
-text._h_conversions["»"] = "«"
-text._h_conversions["«"] = "»"
+text._horizontal_conversions["»"] = "«"
+text._horizontal_conversions["«"] = "»"
 
 
 class BirdAI:
     _SPEED_SCALE: float = 0.3
 
-    def update(self, _delta: float) -> None:
+    def update(self) -> None:
         assert isinstance(self, AnimatedSprite)
 
         velocity = Vec2(

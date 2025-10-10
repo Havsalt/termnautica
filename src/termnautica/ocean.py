@@ -93,7 +93,7 @@ class Water(Sprite):
         self._rest_location = self.global_position
         return self
 
-    def update(self, _delta: float) -> None:
+    def update(self) -> None:
         # Asin(cx + phi) + d
         self.position.y = floor(
             self.wave_height_at(self._rest_location.x) + self._rest_location.y
@@ -157,7 +157,7 @@ def generate_floor():
 
         if Abyss.length_left:
             point.y += Abyss.current_depth
-            Abyss.floor_points.add(point.to_tuple())
+            Abyss.floor_points.add((point.x, point.y))
             Abyss.length_left -= 1
             if Abyss.length_left == 0:
                 Abyss.just_ended = True
@@ -175,7 +175,7 @@ def generate_floor():
                     int(depth) + Floor.REST_DEPTH + i,
                 )
                 abyss_wall_point.x += random.randint(-1, 0)
-                Floor.points.add(abyss_wall_point.to_tuple())
+                Floor.points.add((abyss_wall_point.x, abyss_wall_point.y))
                 texture_points.append(abyss_wall_point)
                 if random.randint(1, 30) == 1:
                     spawners.CrystalSpawner().with_global_position(
@@ -183,7 +183,7 @@ def generate_floor():
                     )
 
         # Store point over time - Used for collision
-        Floor.points.add(point.to_tuple())
+        Floor.points.add((point.x, point.y))
 
     # FIXME: Implement properly - Almost working
     for prev, curr, peak in groupwise(texture_points, n=3):

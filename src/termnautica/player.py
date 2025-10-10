@@ -4,7 +4,7 @@ from typing import assert_never
 
 import colex
 import keyboard
-from charz import Camera, Sprite, Collider, Hitbox, Vec2
+from charz import Camera, Sprite, Scene, Group, ColliderComponent, Hitbox, Vec2
 
 from . import gear_types, projectiles, settings, ui, ocean
 from .props import Collectable, Interactable, Building, Targetable
@@ -22,7 +22,7 @@ ARROW_UP: int = 72
 ARROW_DOWN: int = 80
 
 
-class Player(Collider, Sprite):
+class Player(ColliderComponent, Sprite):
     _GRAVITY: float = 0.91
     _JUMP_STRENGTH: float = 4
     _AIR_FRICTION: float = 0.7
@@ -112,7 +112,7 @@ class Player(Collider, Sprite):
     def damage(self) -> float:
         return self._knife.value
 
-    def update(self, _delta: float) -> None:
+    def update(self) -> None:
         # Order of tasks
         self.handle_action_input()
         self.handle_gui()
@@ -217,12 +217,12 @@ class Player(Collider, Sprite):
                 break
 
     def is_submerged(self) -> bool:
-        self_height = self.global_position.y - self.texture_size.y / 2
+        self_height = self.global_position.y - self.get_texture_size().y / 2
         wave_height = ocean.Water.wave_height_at(self.global_position.x)
         return self_height - wave_height > 0
 
     def is_in_ocean(self):
-        self_height = self.global_position.y + self.texture_size.y / 2 - 1
+        self_height = self.global_position.y + self.get_texture_size().y / 2 - 1
         wave_height = ocean.Water.wave_height_at(self.global_position.x)
         return self_height - wave_height > 0
 
@@ -238,9 +238,9 @@ class Player(Collider, Sprite):
         # FIXME: Find out why it says `int | float` and not just `int` for `<Vec2i>.x`
         center = self.global_position
         if self.centered:
-            center -= self.texture_size / 2
-        for x_offset in range(int(self.texture_size.x)):
-            for y_offset in range(int(self.texture_size.y)):
+            center -= self.get_texture_size() / 2
+        for x_offset in range(int(self.get_texture_size().x)):
+            for y_offset in range(int(self.get_texture_size().y)):
                 global_point = (
                     floor(center.x + x_offset),
                     floor(center.y + y_offset),
@@ -287,7 +287,7 @@ class Player(Collider, Sprite):
         # TODO: Check if is on floor first
         if self._current_action == "space" and self._key_just_pressed:
             self._y_speed = -self._JUMP_STRENGTH
-        combined_velocity = Vec2(velocity.x, self._y_speed).clamped(
+        combined_velocity = Vec2(velocity.x, self._y_speed).clamp(
             -self._MAX_SPEED,
             self._MAX_SPEED,
         )
@@ -308,7 +308,7 @@ class Player(Collider, Sprite):
         elif not self.is_in_ocean():
             self._y_speed += self._GRAVITY
         # Is in ocean movement
-        combined_velocity = Vec2(velocity.x, velocity.y + self._y_speed).clamped(
+        combined_velocity = Vec2(velocity.x, velocity.y + self._y_speed).clamp(
             -self._MAX_SPEED,
             self._MAX_SPEED,
         )
@@ -373,7 +373,7 @@ class Player(Collider, Sprite):
     def handle_interact_selection(self) -> None:
         proximite_interactables: list[tuple[float, Interactable]] = []
         global_point = self.global_position  # Store property value outside loop
-        for node in Sprite.texture_instances.values():
+        for node in Scene.current.get_group_members(Group.TEXTURE, type_hint=Sprite):
             if (
                 isinstance(node, Interactable)
                 and node.interactable
@@ -422,7 +422,7 @@ class Player(Collider, Sprite):
         global_point = self.global_position  # Store property value outside loop
         reach_squared = self._RANGED_REACH * self._RANGED_REACH
         # TODO: Iterate over a smaller collection
-        for node in Sprite.texture_instances.values():
+        for node in Scene.current.get_group_members(Group.TEXTURE, type_hint=Sprite):
             if (
                 isinstance(node, Targetable)
                 and (distance := global_point.distance_squared_to(node.global_position))

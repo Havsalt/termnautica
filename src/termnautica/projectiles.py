@@ -1,7 +1,7 @@
 from typing import Self
 
 import colex
-from charz import Node, Sprite
+from charz import Scene, Group, Sprite
 
 from .props import Targetable, HasHealth
 
@@ -23,7 +23,7 @@ class HarpoonSpear(Sprite):
         self._damage = damage
         return self
 
-    def update(self, _delta: float) -> None:
+    def update(self) -> None:
         assert isinstance(self._target, Sprite), (
             f"Target {self._target} missing `Sprite` base"
         )
@@ -32,7 +32,7 @@ class HarpoonSpear(Sprite):
         )
 
         # Check if target is still in world
-        if self._target.uid not in Node.node_instances:
+        if self._target.uid not in Scene.current.groups[Group.NODE]:
             self.queue_free()
             return
 
@@ -44,7 +44,7 @@ class HarpoonSpear(Sprite):
 
         location = self.global_position
         margin_squared = self._MARGIN * self._MARGIN
-        for node in tuple(Sprite.texture_instances.values()):
+        for node in Scene.current.get_group_members(Group.TEXTURE, type_hint=Sprite):
             if node is self:
                 continue
             # DEV
