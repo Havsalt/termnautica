@@ -54,10 +54,9 @@ class App(Engine):
     )
 
     def __init__(self) -> None:
-        Camera.current = (
-            Camera()
-            .with_mode(Camera.MODE_CENTERED)
-            .with_position(Vec2(-2, -2))
+        Camera.current = Camera(
+            position=Vec2(-2, -2),
+            mode=Camera.MODE_CENTERED,
         )
         self.player = Player()
         # Attatch new camera to player, *after* player has been created
