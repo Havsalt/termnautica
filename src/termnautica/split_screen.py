@@ -81,17 +81,21 @@ class FastSplitScreen(charz.Screen):
         hud_2 = charz.Scene.current.get_first_group_member(
             "hud-2", type_hint=ui.HUDElement
         )
+        hud_2_was_visible = hud_2.visible
         hud_2.hide()
         self._screen_1.render_all(texture_nodes)
-        hud_2.show()
+        if hud_2_was_visible:
+            hud_2.show()
         just_current_camera = charz.Camera.current
         charz.Camera.current = self.second_camera
         hud_1 = charz.Scene.current.get_first_group_member(
             "hud-1", type_hint=ui.HUDElement
         )
+        hud_1_was_visible = hud_1.visible
         hud_1.hide()
         self._screen_2.render_all(texture_nodes)
-        hud_1.show()
+        if hud_1_was_visible:
+            hud_1.show()
         charz.Camera.current = just_current_camera
 
         buf_1 = self._screen_1._single_line_buffer.split("\n")
