@@ -537,6 +537,7 @@ class Player(ColliderComponent, Sprite):
     # TODO: Implement
     def on_death(self) -> None:
         self.queue_free()
+        self.hud.hide()
         if isinstance(self._current_interactable, Interactable):
             self._current_interactable.loose_focus()
         # Reset states
