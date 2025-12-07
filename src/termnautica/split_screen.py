@@ -1,6 +1,6 @@
 import charz_rust
 import charz
-from charz._annotations import Char, FileLike, TextureNode
+from charz.typing import Char, FileLike, TextureNode
 from charz._screen import ColorChoice
 from colex import RESET, NONE, ColorValue
 
