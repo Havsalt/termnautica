@@ -6,10 +6,12 @@ from typing import MutableMapping
 import pygame
 import colex
 from colex import ColorValue
-from charz import Node, Sprite, Label, Vec2, text, clamp
+from charz import Node, Sprite, Label, Vec2, text, clamp, group
 
 from . import settings
 from .item import ItemID, Recipe
+
+pygame.mixer.init()
 
 
 type Count = int
@@ -340,3 +342,28 @@ class Crafting(UIElement, Panel):  # GUI
                     )
                     self._info_labels.append(idgredient_label)
                     lino += 1
+
+
+class HUDElement(UIElement, Sprite): ...
+
+
+class ComposedHUD(HUDElement):
+    def __init__(self, *, inventory_ref: dict[ItemID, Count]) -> None:
+        self.health_bar = HealthBar(self)
+        self.oxygen_bar = OxygenBar(self)
+        self.hunger_bar = HungerBar(self)
+        self.thirst_bar = ThirstBar(self)
+        Inventory(self, inventory_ref=inventory_ref)
+        HotbarE(self)
+        Hotbar1(self)
+        Hotbar2(self)
+        Hotbar3(self)
+        self.crafting_gui = Crafting(self)
+
+
+@group("hud-1")
+class ComposedHUD1(ComposedHUD): ...
+
+
+@group("hud-2")
+class ComposedHUD2(ComposedHUD): ...

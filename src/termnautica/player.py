@@ -67,6 +67,7 @@ class Player(ColliderComponent, Sprite):
     _ACTIONS: Actions = Actions()
     _KEY_MODIFIERS: KeyModifiers = KeyModifiers()
     _MOVE_KEYS: MoveKeys = MoveKeys()
+    _HUD_TYPE: type[ui.ComposedHUD] = ui.ComposedHUD
     hitbox = Hitbox(size=Vec2(5, 3), centered=True)
     z_index = 1
     color = colex.AQUA
@@ -93,31 +94,24 @@ class Player(ColliderComponent, Sprite):
         self._harpoon = gear_types.Harpoon(model=ItemID.MAKESHIFT_HARPOON)
         # UI
         # NOTE: Current `Camera` has to be initialized before `Player.__init__` is called
-        self._health_bar = ui.HealthBar(Camera.current)
-        self._oxygen_bar = ui.OxygenBar(Camera.current)
-        self._hunger_bar = ui.HungerBar(Camera.current)
-        self._thirst_bar = ui.ThirstBar(Camera.current)
-        ui.Inventory(Camera.current, inventory_ref=self.inventory)
-        ui.HotbarE(Camera.current)
-        ui.Hotbar1(Camera.current)
-        ui.Hotbar2(Camera.current)
-        ui.Hotbar3(Camera.current)
-        self.crafting_gui = ui.Crafting(Camera.current)
+        self.hud = self._HUD_TYPE(inventory_ref=self.inventory).with_parent(
+            Camera.current
+        )
 
     @property
     def health(self) -> float:
-        return self._health_bar.value
+        return self.hud.health_bar.value
 
     @health.setter  # NOTE: Clamped health
     def health(self, new_health: float) -> None:
         # NOTE: Use min-max until `int | float` is changed in `linflex`
-        change = new_health - self._health_bar.value
-        self._health_bar.value = min(
+        change = new_health - self.hud.health_bar.value
+        self.hud.health_bar.value = min(
             max(
                 new_health,
                 0,
             ),
-            self._health_bar.MAX_VALUE,
+            self.hud.health_bar.MAX_VALUE,
         )
         if change < 0:  # Took damage
             Blood().with_global_position(
@@ -174,13 +168,13 @@ class Player(ColliderComponent, Sprite):
             match stat:
                 case ConsumableStat.HUNGER:
                     hunger_restore = consumables[item][stat]
-                    self._hunger_bar.value += hunger_restore
+                    self.hud.hunger_bar.value += hunger_restore
                 case ConsumableStat.THIRST:
                     thirst_restore = consumables[item][stat]
-                    self._thirst_bar.value += thirst_restore
+                    self.hud.thirst_bar.value += thirst_restore
                 case ConsumableStat.HEALING:
                     healing = consumables[item][stat]
-                    self._health_bar.value += healing
+                    self.hud.health_bar.value += healing
                 case _:
                     assert_never(stat)
 
@@ -355,15 +349,15 @@ class Player(ColliderComponent, Sprite):
         if (  # Is in building with oxygen - Type safe
             isinstance(self.parent, Building) and self.parent.HAS_OXYGEN
         ):
-            self._oxygen_bar.fill()
+            self.hud.oxygen_bar.fill()
             return
         # Restore oxygen if above ocean waves
         if not self.is_submerged():
-            if self._oxygen_bar.value != self._oxygen_bar.MAX_VALUE:
-                self._oxygen_bar.fill()
+            if self.hud.oxygen_bar.value != self.hud.oxygen_bar.MAX_VALUE:
+                self.hud.oxygen_bar.fill()
             return
         # Decrease health if no oxygen
-        if self._oxygen_bar.value == 0:
+        if self.hud.oxygen_bar.value == 0:
             drown_damage = self._DROWN_DAMAGE / settings.FPS  # X HP per second
             if self.is_at_critical_depth():
                 drown_damage *= self._CRITICAL_DEPTH_DROWN_DAMAGE_MULTIPLIER
@@ -375,23 +369,23 @@ class Player(ColliderComponent, Sprite):
         if self.is_at_critical_depth():
             rate *= self._CRITICAL_DEPTH_AIR_CONSUMPTION_MULTIPLIER
             rate *= 1 - self._o2_tank.value
-        oxygen_bubble_count = self._oxygen_bar.cell_count
+        oxygen_bubble_count = self.hud.oxygen_bar.cell_count
         rate *= 1 - self._diving_mask.value
-        self._oxygen_bar.value -= rate
-        if self._oxygen_bar.cell_count < oxygen_bubble_count:
+        self.hud.oxygen_bar.value -= rate
+        if self.hud.oxygen_bar.cell_count < oxygen_bubble_count:
             Bubble().with_global_position(
                 x=self.global_position.x,
                 y=self.global_position.y - 1,
             )
 
     def handle_hunger(self) -> None:
-        self._hunger_bar.value -= self._HUNGER_RATE / settings.FPS
-        if self._hunger_bar.value == 0:
+        self.hud.hunger_bar.value -= self._HUNGER_RATE / settings.FPS
+        if self.hud.hunger_bar.value == 0:
             self.health -= 1
 
     def handle_thirst(self) -> None:
-        self._thirst_bar.value -= self._THIRST_RATE / settings.FPS
-        if self._thirst_bar.value == 0:
+        self.hud.thirst_bar.value -= self._THIRST_RATE / settings.FPS
+        if self.hud.thirst_bar.value == 0:
             self.health -= 1
 
     def handle_interact_selection(self) -> None:
@@ -557,6 +551,7 @@ class Player(ColliderComponent, Sprite):
 class Player1(Player):
     position = Vec2(17, -18)
     color = colex.CYAN
+    _HUD_TYPE = ui.ComposedHUD1
     _ACTIONS = Actions(
         confirm="q",
     )
@@ -567,6 +562,7 @@ class Player1(Player):
 class Player2(Player):
     position = Vec2(-15, -30)
     color = colex.YELLOW
+    _HUD_TYPE = ui.ComposedHUD2
     _ACTIONS = Actions(
         interact="ø",
         confirm="m",

@@ -4,6 +4,8 @@ from charz.typing import Char, FileLike, TextureNode
 from charz._screen import ColorChoice
 from colex import RESET, NONE, ColorValue
 
+from . import ui
+
 
 class FastSplitScreen(charz.Screen):
     def __init__(
@@ -76,10 +78,20 @@ class FastSplitScreen(charz.Screen):
             charz.Group.TEXTURE,
             type_hint=TextureNode,
         )
+        hud_2 = charz.Scene.current.get_first_group_member(
+            "hud-2", type_hint=ui.HUDElement
+        )
+        hud_2.hide()
         self._screen_1.render_all(texture_nodes)
+        hud_2.show()
         just_current_camera = charz.Camera.current
         charz.Camera.current = self.second_camera
+        hud_1 = charz.Scene.current.get_first_group_member(
+            "hud-1", type_hint=ui.HUDElement
+        )
+        hud_1.hide()
         self._screen_2.render_all(texture_nodes)
+        hud_1.show()
         charz.Camera.current = just_current_camera
 
         buf_1 = self._screen_1._single_line_buffer.split("\n")

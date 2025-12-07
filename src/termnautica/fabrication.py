@@ -69,7 +69,7 @@ class Fabrication(Crafting):  # Extended Component (mixin class)
             actor,
             Player,
         ), "Only `Player` can select `BasicFabricator`"
-        actor.crafting_gui.show()
+        actor.hud.crafting_gui.show()
         all_recipe_states = [
             (
                 recipe,
@@ -82,7 +82,7 @@ class Fabrication(Crafting):  # Extended Component (mixin class)
         selected_idgredient_counts = tuple(
             actor.inventory.get(item, 0) for item in recipe.idgredients
         )
-        actor.crafting_gui.update_from_recipe(
+        actor.hud.crafting_gui.update_from_recipe(
             recipe,
             selected_idgredient_counts,
             all_recipe_states,
@@ -94,7 +94,7 @@ class Fabrication(Crafting):  # Extended Component (mixin class)
             actor,
             Player,
         ), "Only `Player` can select `BasicFabricator`"
-        actor.crafting_gui.hide()
+        actor.hud.crafting_gui.hide()
 
     def on_interact(self, actor: Sprite) -> None:
         _ensure_player()
