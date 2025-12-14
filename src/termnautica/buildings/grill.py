@@ -15,21 +15,21 @@ class Grill(Fabrication, Interactable, Sprite):
     _RECIPES = [
         Recipe(
             products={ItemID.FRIED_FISH_NUGGET: 2},
-            idgredients={
+            ingredients={
                 ItemID.GOLD_FISH: 1,
                 ItemID.KELP: 1,
             },
         ),
         Recipe(
             products={ItemID.COD_SOUP: 2},
-            idgredients={
+            ingredients={
                 ItemID.COD: 1,
                 ItemID.WATER_BOTTLE: 1,
             },
         ),
         Recipe(
             products={ItemID.GRILLED_SALMON: 2},
-            idgredients={
+            ingredients={
                 ItemID.SALMON: 2,
                 ItemID.COAL_ORE: 1,
             },

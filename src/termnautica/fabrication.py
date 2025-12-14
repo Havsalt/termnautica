@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from charz import Sprite
 
 from .props import Crafting
-from .item import ItemID, Slot, gear
+from .item import Container, gear
 
 
 # Type checking for lazy loading
@@ -49,19 +49,19 @@ class Fabrication(Crafting):  # Extended Component (mixin class)
 
     def can_craft_by_index(
         self,
-        inventory: dict[ItemID, Count],
+        container: Container,
     ) -> bool:
         # Use local mutable variable
         recipe = self._RECIPES[self._selected_recipe_index]
-        return self.can_craft(recipe, inventory)
+        return self.can_craft(recipe, container)
 
     def craft_by_index(
         self,
-        inventory: dict[ItemID, Count],
+        container: Container,
     ) -> None:
         # Use local mutable variable
         recipe = self._RECIPES[self._selected_recipe_index]
-        self.craft(recipe, inventory)
+        self.craft(recipe, container)
 
     def when_selected(self, actor: Sprite) -> None:
         _ensure_player()
@@ -80,7 +80,8 @@ class Fabrication(Crafting):  # Extended Component (mixin class)
         # TODO: Implement `selected_recipe_index`
         recipe = self._RECIPES[self._selected_recipe_index]
         selected_idgredient_counts = tuple(
-            actor.inventory.get(item, 0) for item in recipe.idgredients
+            actor.inventory.count(item) if actor.inventory.has(item) else 0
+            for item in recipe.ingredients
         )
         actor.hud.crafting_gui.update_from_recipe(
             recipe,

@@ -10,14 +10,14 @@ class Medbay(Fabrication, Interactable, Sprite):
     _RECIPES = [
         Recipe(
             products={ItemID.BANDAGE: 1},
-            idgredients={
+            ingredients={
                 ItemID.FABRIC: 2,
                 ItemID.STRING: 1,
             },
         ),
         Recipe(
             products={ItemID.MEDKIT: 1},
-            idgredients={
+            ingredients={
                 ItemID.KELP: 2,
                 ItemID.STRING: 1,
                 ItemID.FABRIC: 4,

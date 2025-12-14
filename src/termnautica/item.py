@@ -9,23 +9,26 @@ This is basically the item DB of the game.
 
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass
-from enum import Enum, auto, unique
-from typing import NewType
+from enum import Enum, StrEnum, auto, unique
+from typing import NewType, Protocol
 
 
 type Count = int  # Positive
 type Change = float
+type NonNegative = int
+"""Positive `Integer`, including `0`; `[0, INF>`"""
 
 
 @dataclass(kw_only=True, frozen=True, slots=True)
 class Recipe:
     products: dict[ItemID, Count]
-    idgredients: dict[ItemID, Count]
+    ingredients: dict[ItemID, Count]
 
 
 @unique
-class ItemID(Enum):
+class ItemID(StrEnum):
     def __hash__(self) -> int:
         return id(self)
 
@@ -183,3 +186,65 @@ consumables: dict[ItemID, dict[ConsumableStat, Change]] = {
         ConsumableStat.HUNGER: 23,
     },
 }
+
+
+class Container(Protocol):
+    def ids(self) -> tuple[ItemID, ...]: ...
+    def slot_count(self) -> Count: ...
+    def has(self, item: ItemID) -> bool: ...
+    def count(self, item: ItemID) -> Count: ...
+    def set(self, item: ItemID, count: Count) -> None:
+        """Has to remove items with count `<= 0`"""
+
+    def take(self, item: ItemID, count: Count) -> None:
+        """Has to remove items with count `<= 0`"""
+
+    def give(self, item: ItemID, count: Count) -> None:
+        """Has to create item if not exists"""
+
+
+class SizedInventory:
+    def __init__(self, slot_limit: NonNegative | None = None) -> None:
+        self._default_dict = defaultdict[ItemID, Count](int)
+        self.slot_limit = slot_limit
+
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}({self.slot_limit=}, content={self._default_dict})"
+
+    def ids(self) -> tuple[ItemID, ...]:
+        return tuple(self._default_dict.keys())
+
+    def slot_count(self) -> Count:
+        return len(self._default_dict)
+
+    def has(self, item: ItemID) -> bool:
+        return item in self._default_dict
+
+    def count(self, item: ItemID) -> Count:
+        return self._default_dict[item]
+
+    def set(self, item: ItemID, count: Count) -> None:
+        if count == 0:
+            del self._default_dict[item]
+        else:
+            self._default_dict[item] = count
+
+    def take(self, item: ItemID, count: Count) -> None:
+        self._default_dict[item] -= count
+        if self._default_dict[item] == 0:
+            del self._default_dict[item]
+        elif self._default_dict[item] < 0:
+            raise ValueError(
+                f"Item count for `{item}` is less than `0`, got {self._default_dict[item]}"
+            )
+
+    def clear(self) -> None:
+        self._default_dict.clear()
+
+    def give(self, item: ItemID, count: Count) -> None:
+        self._default_dict[item] += count
+        if self.slot_limit is not None:
+            if len(self._default_dict) > self.slot_limit:
+                raise ValueError(
+                    f"Slot size exceeded: {len(self._default_dict)} > {self.slot_limit}"
+                )

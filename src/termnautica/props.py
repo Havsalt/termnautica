@@ -5,17 +5,15 @@ Classes defined here will be used as `mixin components`.
 They may also provide methods, either to be overwritten, or as base case.
 """
 
-from typing import Self
+from collections import defaultdict
+from typing import Protocol, Self
 
 import pygame
 import colex
 from charz import Sprite, Hitbox, Vec2, clamp
 
 from . import settings
-from .item import ItemID, Recipe
-
-
-type Count = int
+from .item import ItemID, Recipe, Container
 
 
 class Collectable:
@@ -24,13 +22,10 @@ class Collectable:
         settings.SOUNDS_FOLDER / "collect" / "default.wav"
     )
 
-    def collect_into(self, inventory: dict[ItemID, Count]) -> None:
+    def collect_into(self, container: Container) -> None:
         assert self._ITEM is not None, f"{self}.name is `None`"
 
-        if self._ITEM in inventory:
-            inventory[self._ITEM] += 1
-        else:
-            inventory[self._ITEM] = 1
+        container.give(self._ITEM, 1)
 
         if self._SOUND_COLLECT is not None:
             self._SOUND_COLLECT.play()
@@ -116,51 +111,50 @@ class Building:
 class Crafting:
     _RECIPES: list[Recipe] = []  # NOTE: Order matter
 
-    def can_craft(self, recipe: Recipe, inventory: dict[ItemID, Count]) -> bool:
+    def can_craft(self, recipe: Recipe, container: Container) -> bool:
         return all(
-            inventory.get(idgredient, 0) >= idgredient_cost
-            for idgredient, idgredient_cost in recipe.idgredients.items()
+            container.count(idgredient) >= idgredient_cost
+            if container.has(idgredient)
+            else False
+            for idgredient, idgredient_cost in recipe.ingredients.items()
         )
 
     def consume_idgredients(
         self,
         recipe: Recipe,
-        inventory: dict[ItemID, Count],
+        container: Container,
     ) -> None:
-        for idgredient, idgredient_cost in recipe.idgredients.items():
-            if idgredient not in inventory:
+        for idgredient, idgredient_cost in recipe.ingredients.items():
+            if not container.has(idgredient):
                 raise KeyError(
                     f"Attempted removing {idgredient_cost}x{idgredient},"
-                    f" but {idgredient} is not found in {inventory}"
+                    f" but {idgredient} is not found in {container}"
                 )
-            inventory[idgredient] -= idgredient_cost
+            container.take(idgredient, idgredient_cost)
 
     def add_products(
         self,
         recipe: Recipe,
-        inventory: dict[ItemID, Count],
+        container: Container,
     ) -> None:
         for product, production_count in recipe.products.items():
-            if product in inventory:
-                inventory[product] += production_count
-            else:
-                inventory[product] = production_count
+            container.give(product, production_count)
 
     def craft(
         self,
         recipe: Recipe,
-        inventory: dict[ItemID, Count],
+        container: Container,
     ) -> None:
-        self.consume_idgredients(recipe, inventory)
-        self.add_products(recipe, inventory)
+        self.consume_idgredients(recipe, container)
+        self.add_products(recipe, container)
 
     # def craft_each_if_possible(
     #     self,
-    #     inventory: dict[ItemID, Count],
+    #     container: Container,
     # ) -> None:
     #     for recipe in self._RECIPES:
-    #         if self.can_craft(recipe, inventory):
-    #             self.craft(recipe, inventory)
+    #         if self.can_craft(recipe, container):
+    #             self.craft(recipe, container)
 
 
 class _Marker(Sprite):

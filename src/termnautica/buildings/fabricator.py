@@ -12,38 +12,38 @@ class Fabricator(Fabrication, Interactable, Sprite):
     _RECIPES = [
         Recipe(
             products={ItemID.FABRIC: 1},
-            idgredients={ItemID.KELP: 1},
+            ingredients={ItemID.KELP: 1},
         ),
         Recipe(
             products={ItemID.STRING: 2},
-            idgredients={
+            ingredients={
                 ItemID.KELP: 1,
                 ItemID.FABRIC: 1,
             },
         ),
         Recipe(
             products={ItemID.SHARP_ROCK: 1},
-            idgredients={
+            ingredients={
                 ItemID.IRON_ORE: 2,
             },
         ),
         Recipe(
             products={ItemID.BASIC_DIVING_MASK: 1},
-            idgredients={
+            ingredients={
                 ItemID.FABRIC: 2,
                 ItemID.STRING: 1,
             },
         ),
         Recipe(
             products={ItemID.BASIC_SUITE: 1},
-            idgredients={
+            ingredients={
                 ItemID.FABRIC: 2,
                 ItemID.TITANIUM_BAR: 2,
             },
         ),
         Recipe(
             products={ItemID.O2_TANK: 1},
-            idgredients={
+            ingredients={
                 ItemID.STRING: 1,
                 ItemID.COPPER_BAR: 2,
                 ItemID.GOLD_BAR: 1,
@@ -51,7 +51,7 @@ class Fabricator(Fabrication, Interactable, Sprite):
         ),
         Recipe(
             products={ItemID.MAKESHIFT_HARPOON: 1},
-            idgredients={
+            ingredients={
                 ItemID.STRING: 1,
                 ItemID.IRON_PLATE: 2,
                 ItemID.GOLD_BAR: 1,

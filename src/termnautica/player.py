@@ -1,3 +1,4 @@
+import random
 from math import floor
 from copy import deepcopy
 from typing import NamedTuple, assert_never
@@ -10,7 +11,7 @@ from . import gear_types, projectiles, settings, ui, ocean
 from .props import Collectable, Interactable, Building, Targetable
 from .fabrication import Fabrication
 from .particles import Bubble, Blood
-from .item import ItemID, Slot, ConsumableStat, gear, consumables
+from .item import ItemID, Slot, ConsumableStat, SizedInventory, gear, consumables
 from .utils import move_toward
 
 
@@ -38,6 +39,7 @@ class Actions(NamedTuple):  # Order is also precedence - First is highest
     confirm: Action = "enter"
     scroll_up2: Action = "k"
     scroll_down2: Action = "j"
+    open_inventory: Action = "f"
 
 
 class KeyModifiers(NamedTuple):
@@ -85,7 +87,7 @@ class Player(ColliderComponent, Sprite):
     _current_targetable: Sprite | None = None
 
     def __init__(self) -> None:
-        self.inventory = dict[ItemID, Count]()
+        self.inventory = SizedInventory(slot_limit=8)
         # Gear - May be base model; `None`
         self._knife = gear_types.Knife(model=None)
         self._diving_mask = gear_types.DivingMask(model=None)
@@ -136,7 +138,6 @@ class Player(ColliderComponent, Sprite):
         self.handle_oxygen()
         self.handle_hunger()
         self.handle_thirst()
-        # NOTE: Order of drinking, eating and healing is not visually correct
         self.handle_eating()
         self.handle_drinking()
         self.handle_healing()
@@ -149,17 +150,17 @@ class Player(ColliderComponent, Sprite):
         assert item in consumables, (
             f"All consumable items require additional metadata, for item: {item}"
         )
-        if item not in self.inventory:
+        if not self.inventory.has(item):
             raise KeyError(
                 f"Attempted removing {count} {item.name},"
                 f" but {item.name} is not found in {self.inventory}"
             )
-        elif count > self.inventory[item]:
+        elif count > self.inventory.count(item):
             raise ValueError(
                 f"Attempted to remove {count} {item.name},"
-                f" but only has {self.inventory[item]} in {self.inventory}"
+                f" but only has {self.inventory.count(item)} in {self.inventory}"
             )
-        self.inventory[item] -= count
+        self.inventory.take(item, count)
 
         for stat in ConsumableStat:
             if stat not in consumables[item]:
@@ -180,11 +181,12 @@ class Player(ColliderComponent, Sprite):
 
     def equip_gear(self, item: ItemID) -> None:
         assert item in gear, f"Gear item {item} is not in gear registry"
-        assert item in self.inventory, (
+        assert self.inventory.has(item), (
             f"Attempted to equip {item}, but it's not found in inventory"
         )
         # NOTE: Currently does not allow to keep extra gear crafted
-        del self.inventory[item]
+        self.inventory.set(item, 0)
+
         slot = gear[item][0]
         match slot:
             case Slot.MELEE:
@@ -204,7 +206,7 @@ class Player(ColliderComponent, Sprite):
         if not (self._current_action == self._ACTIONS.eat and self._key_just_pressed):
             return
 
-        for item in self.inventory:
+        for item in self.inventory.ids():
             if item in consumables and ConsumableStat.HUNGER in consumables[item]:
                 self.consume_item(item)
                 break
@@ -213,7 +215,7 @@ class Player(ColliderComponent, Sprite):
         if not (self._current_action == self._ACTIONS.drink and self._key_just_pressed):
             return
 
-        for item in self.inventory:
+        for item in self.inventory.ids():
             if item in consumables and ConsumableStat.THIRST in consumables[item]:
                 self.consume_item(item)
                 break
@@ -222,7 +224,7 @@ class Player(ColliderComponent, Sprite):
         if not (self._current_action == self._ACTIONS.heal and self._key_just_pressed):
             return
 
-        for item in self.inventory:
+        for item in self.inventory.ids():
             if item in consumables and ConsumableStat.HEALING in consumables[item]:
                 self.consume_item(item)
                 break
@@ -278,6 +280,11 @@ class Player(ColliderComponent, Sprite):
         if not self._key_just_pressed:
             return
         if not isinstance(self._current_interactable, Fabrication):
+            if self._current_action == self._ACTIONS.open_inventory:
+                if self.hud.inventory.is_open():
+                    self.hud.inventory.animate_hide()
+                else:
+                    self.hud.inventory.animate_show()
             return
         if (
             self._current_action == self._ACTIONS.scroll_down
@@ -536,8 +543,17 @@ class Player(ColliderComponent, Sprite):
 
     # TODO: Implement
     def on_death(self) -> None:
-        self.queue_free()
-        self.hud.hide()
+        self.health = self.hud.health_bar.MAX_VALUE
+        self.global_position = Vec2(20 + random.randint(0, 20), -20)
+        while self.is_colliding():  # Avoid colliding with player in air at respawn
+            self.global_position = Vec2(20 + random.randint(0, 20), -20)
+        self.inventory.clear()
+        
+        # Hide inventory UI instantly
+        self.hud.inventory.animate_hide()
+        self.hud.inventory.hide()
+        
+        self.parent = None  # Just in case, temp anyways...
         if isinstance(self._current_interactable, Interactable):
             self._current_interactable.loose_focus()
         # Reset states
@@ -550,18 +566,21 @@ class Player(ColliderComponent, Sprite):
 
 
 class Player1(Player):
-    position = Vec2(17, -18)
+    position = Vec2(17, -3)
     color = colex.CYAN
     _HUD_TYPE = ui.ComposedHUD1
     _ACTIONS = Actions(
         confirm="q",
+        # These 2 are basically set to something unused
+        scroll_up2="%",
+        scroll_down2="&",
     )
     _KEY_MODIFIERS = KeyModifiers()
     _MOVE_KEYS = MoveKeys()
 
 
 class Player2(Player):
-    position = Vec2(-15, -30)
+    position = Vec2(-15, -3)
     color = colex.YELLOW
     _HUD_TYPE = ui.ComposedHUD2
     _ACTIONS = Actions(
@@ -577,6 +596,7 @@ class Player2(Player):
         scroll_up2="+",
         scroll_down2="0",
         throw_harpoon="-",
+        open_inventory="n",
     )
     _KEY_MODIFIERS = KeyModifiers(
         shift="alt gr",

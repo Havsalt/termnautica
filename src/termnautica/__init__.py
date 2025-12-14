@@ -86,8 +86,6 @@ class App(Engine):
         ## Music
         pygame.mixer_music.load(settings.MUSIC_FOLDER / "main.mp3")
         pygame.mixer_music.set_volume(0.50)
-        ##DEV
-        # pygame.mixer_music.set_volume(0)
         pygame.mixer_music.play(-1)  # Infinite loop
         # pygame.mixer.set_num_channels(64)
         # Dev stuff stashed away in this method
@@ -147,10 +145,10 @@ class App(Engine):
 
         if keyboard.is_pressed("b"):
             if (
-                ItemID.TITANIUM_BAR in self.player.inventory
-                and self.player.inventory[ItemID.TITANIUM_BAR] >= 3
+                self.player.inventory.has(ItemID.TITANIUM_BAR)
+                and self.player.inventory.count(ItemID.TITANIUM_BAR) >= 3
             ):
-                self.player.inventory[ItemID.TITANIUM_BAR] -= 3
+                self.player.inventory.take(ItemID.TITANIUM_BAR, 3)
                 Hallway().with_global_position(
                     self.player.global_position + Vec2.RIGHT * 5
                 )

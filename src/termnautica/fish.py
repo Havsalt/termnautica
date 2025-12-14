@@ -180,6 +180,7 @@ class SwordFish(FishAI, HasHealth, Interactable, Targetable, Sprite):
     _DAMAGE: int = 15
     _ATTACK_INTERVAL: int = 10  # Frames
     _SOUND_HIT = pygame.mixer.Sound(settings.SOUNDS_FOLDER / "hit.wav")
+    _SOUND_HIT.set_volume(0.70)
     _SOUND_LURK = pygame.mixer.Sound(settings.SOUNDS_FOLDER / "hostile_fish_lurk.wav")
     _CHANNEL_LURK = pygame.mixer.Channel(4)
     _SOUND_LURK_CHANCE: int = 2000  # 1 out of X chance

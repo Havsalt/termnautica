@@ -12,48 +12,48 @@ class Smelter(Fabrication, Interactable, Sprite):
     _RECIPES = [
         Recipe(
             products={ItemID.COPPER_BAR: 2},
-            idgredients={
+            ingredients={
                 ItemID.COPPER_ORE: 2,
                 ItemID.COAL_ORE: 1,
             },
         ),
         Recipe(
             products={ItemID.TITANIUM_BAR: 2},
-            idgredients={
+            ingredients={
                 ItemID.TITANIUM_ORE: 2,
                 ItemID.COAL_ORE: 1,
             },
         ),
         Recipe(
             products={ItemID.GOLD_BAR: 2},
-            idgredients={
+            ingredients={
                 ItemID.GOLD_ORE: 2,
                 ItemID.COAL_ORE: 1,
             },
         ),
         Recipe(
             products={ItemID.IRON_BAR: 2},
-            idgredients={
+            ingredients={
                 ItemID.IRON_ORE: 2,
                 ItemID.COAL_ORE: 1,
             },
         ),
         Recipe(
             products={ItemID.IRON_PLATE: 2},
-            idgredients={
+            ingredients={
                 ItemID.IRON_BAR: 1,
             },
         ),
         Recipe(
             products={ItemID.STEEL_BAR: 2},
-            idgredients={
+            ingredients={
                 ItemID.IRON_BAR: 2,
                 ItemID.COAL_ORE: 1,
             },
         ),
         Recipe(
             products={ItemID.STEEL_THREAD: 1},
-            idgredients={
+            ingredients={
                 ItemID.STEEL_BAR: 1,
                 ItemID.COAL_ORE: 1,
             },

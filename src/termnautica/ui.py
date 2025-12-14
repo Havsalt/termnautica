@@ -1,15 +1,17 @@
 from __future__ import annotations
 
+import itertools
+from enum import Enum, auto, unique
 from math import ceil
-from typing import MutableMapping
 
 import pygame
+import keyboard
 import colex
 from colex import ColorValue
-from charz import Node, Sprite, Label, Vec2, text, clamp, group
+from charz import Node, Sprite, Label, Vec2, clamp, group
 
 from . import settings
-from .item import ItemID, Recipe
+from .item import ItemID, Recipe, Container
 
 pygame.mixer.init()
 
@@ -17,9 +19,11 @@ pygame.mixer.init()
 type Count = int
 type Craftable = bool
 type IdgredientCount = int
+type Char = str
+"""`String` of length `1`."""
 
 
-_UI_LEFT_OFFSET: int = -50
+_UI_LEFT_OFFSET: int = -38
 _UI_RIGHT_OFFSET: int = 40
 _UI_CHANNEL = pygame.mixer.Channel(0)
 
@@ -29,48 +33,264 @@ class UIElement:  # NOTE: Have this be the first mixin in mro
     z_index = 5  # Global UI z-index
 
 
+class InventorySlot(UIElement, Label):
+    _PREFIX: str = "{}. "
+    _EMPTY_PREFIX: str = "   "
+    _EMPTY_FILLER: Char = "="
+    _CUTOFF_INDICATOR: str = ".."
+    _SUFFIX_LENGTH: int = len(":99")
+    # FPS * Seconds = Frames
+    _TIME_WARMING: float = settings.FPS * 3
+    _TIME_BETWEEN_STEP: float = settings.FPS * 0.2
+    _TIME_BETWEEN_STEP_BACK: float = settings.FPS * 0.15
+    _TIME_COOLING: float = settings.FPS * 2
+
+    @unique
+    class DisplayState(float, Enum):
+        WARMING = auto()
+        SLIDING = auto()
+        COOLING = auto()
+        BACKTRACKING = auto()
+
+    def __init__(self, id: int, max_length: int) -> None:
+        self._max_item_info_length = max_length
+        self._id = id
+        self._state = InventorySlot.DisplayState.WARMING
+        self._frames_waited: int = 0
+        self._scroll_frame: int = 0
+        self._cutoff_amount: int | None = None
+
+    def set_item(self, item: ItemID, count: Count) -> None:
+        self.text = self._PREFIX.format(self._id) + self._fit_item_info(
+            item, count, self._max_item_info_length
+        )
+
+    def clear_item(self) -> None:
+        self.text = (
+            self._EMPTY_PREFIX
+            + self._EMPTY_FILLER * self._max_item_info_length
+            + " " * self._SUFFIX_LENGTH
+        )
+        self._cutoff_amount = None
+
+    def reset_states(self) -> None:
+        self._state = InventorySlot.DisplayState.WARMING
+        self._frames_waited = 0
+        self._scroll_frame = 0
+
+    def update(self) -> None:
+        if self._cutoff_amount is None:
+            return  # Return if no need for scroll animation
+        self._frames_waited += 1
+        match self._state:
+            case InventorySlot.DisplayState.WARMING:
+                if self._frames_waited >= self._TIME_WARMING:
+                    self._state = InventorySlot.DisplayState.SLIDING
+                    self._frames_waited = 0
+            case InventorySlot.DisplayState.SLIDING:
+                if self._scroll_frame >= self._cutoff_amount + len(
+                    self._CUTOFF_INDICATOR
+                ):
+                    self._state = InventorySlot.DisplayState.COOLING
+                if self._frames_waited >= self._TIME_BETWEEN_STEP:
+                    self._frames_waited = 0
+                    self._scroll_frame += 1
+            case InventorySlot.DisplayState.COOLING:
+                if self._frames_waited >= self._TIME_COOLING:
+                    self._state = InventorySlot.DisplayState.BACKTRACKING
+                    self._frames_waited = 0
+            case InventorySlot.DisplayState.BACKTRACKING:
+                if self._scroll_frame <= 0:
+                    self._state = InventorySlot.DisplayState.WARMING
+                if self._frames_waited >= self._TIME_BETWEEN_STEP_BACK:
+                    self._frames_waited = 0
+                    self._scroll_frame -= 1
+
+    def _fit_item_info(
+        self,
+        item: ItemID,
+        count: Count,
+        width: int,
+    ) -> str:
+        """Fit item name for custom inventory wheel sprite.
+
+        Uses local scroll info.
+        Mutates local `._cutoff_amount`.
+
+        Args:
+            item (ItemID): Enum variant.
+            count (Count): Item count.
+            width (int): Max spaces to shorten, and min spaces to fill spaces.
+
+        Returns:
+            str: Item name fitting into `width`.
+        """
+        # Remove underscore, and capitalize each first letter in words
+        pretty_name = " ".join(map(str.capitalize, item.value.split("_")))
+        over_reach = len(pretty_name) - width
+        if over_reach > 0:
+            stop = self._scroll_frame + width - len(self._CUTOFF_INDICATOR)
+            name_segment = pretty_name[self._scroll_frame : stop]
+            missing_letter_count = width - len(name_segment)
+            item_name = name_segment + self._CUTOFF_INDICATOR
+            if missing_letter_count > 0:
+                self._cutoff_amount = over_reach
+        else:
+            item_name = pretty_name
+        # Ljust with `2`, expecting no stack greater than `99`  NOTE: Not enforced
+        return (item_name + ":" + str(count).ljust(2)).ljust(
+            width + self._SUFFIX_LENGTH
+        )
+
+
+class InventoryCenterMarker(UIElement, Sprite):
+    color = colex.DARK_SALMON
+    texture = ["X"]
+
+
+# This is *not* a `Node2D`, because `Node2D` does not handle `.visible` in a tree
 class Inventory(UIElement, Sprite):
-    position = Vec2(_UI_LEFT_OFFSET, 0)
-    # color = colex.from_hex(background="#24ac2d")
-    color = colex.BOLD + colex.WHITE
+    _NAME_LENGTH: int = 6
+    _SHOW_SPEED_PERCENT_PER_FRAME: float = 0.23
+    _HIDE_SPEED_PERCENT_PER_FRAME: float = 0.27
+    _HIDE_ANCHOR: Vec2 = Vec2(18.5, -4)
+    # position = Vec2(_UI_LEFT_OFFSET, 0)
+    position = Vec2(_UI_LEFT_OFFSET + 10, 4)
+
+    @unique
+    class DisplayState(Enum):
+        IDLE = auto()
+        SHOWING = auto()
+        HIDING = auto()
 
     def __init__(
         self,
         parent: Node,
-        inventory_ref: MutableMapping[ItemID, Count],
+        ref: Container,
     ) -> None:
         super().__init__(parent=parent)
-        self._inventory_ref = inventory_ref
-        self._update_texture()
+        self.ref = ref
+        self._state = Inventory.DisplayState.IDLE
+        self._elements: list[Sprite] = [
+            # Center Piviot
+            InventoryCenterMarker().with_parent(self).with_position(Vec2.ZERO),
+            # 1
+            InventorySlot(id=1, max_length=self._NAME_LENGTH)
+            .with_parent(self)
+            .with_position(x=4)
+            .with_color(colex.REVERSE + colex.from_hex("#bbe4e9")),
+            # 2
+            InventorySlot(id=2, max_length=self._NAME_LENGTH)
+            .with_parent(self)
+            .with_position(x=2, y=2)
+            .with_color(colex.REVERSE + colex.from_hex("#79c2d0")),
+            # 3
+            InventorySlot(id=3, max_length=self._NAME_LENGTH)
+            .with_parent(self)
+            .with_position(x=-5, y=4)
+            .with_color(colex.REVERSE + colex.from_hex("#53a8b6")),
+            # 4
+            InventorySlot(id=4, max_length=self._NAME_LENGTH)
+            .with_parent(self)
+            .with_position(x=-13, y=2)
+            .with_color(colex.REVERSE + colex.from_hex("#5585b5")),
+            # 5
+            InventorySlot(id=5, max_length=self._NAME_LENGTH)
+            .with_parent(self)
+            .with_position(x=-15)
+            .with_color(colex.REVERSE + colex.from_hex("#37618b")),
+            # 6
+            InventorySlot(id=6, max_length=self._NAME_LENGTH)
+            .with_parent(self)
+            .with_position(x=-13, y=-2)
+            .with_color(colex.REVERSE + colex.from_hex("#37618b")),
+            # 7
+            InventorySlot(id=7, max_length=self._NAME_LENGTH)
+            .with_parent(self)
+            .with_position(x=-6, y=-4)
+            .with_color(colex.REVERSE + colex.from_hex("#5585b5")),
+            # 8
+            InventorySlot(id=8, max_length=self._NAME_LENGTH)
+            .with_parent(self)
+            .with_position(x=2, y=-2)
+            .with_color(colex.REVERSE + colex.from_hex("#79c2d0")),
+        ]
+        self._slots: list[InventorySlot] = [
+            element for element in self._elements if isinstance(element, InventorySlot)
+        ]
+        self._slots_resting_positions = [slot.position.copy() for slot in self._slots]
+        self._waited_1_frame = False
+        self._showing_percent = 0.00
+        self.animate_hide()  # NOTE: Will be instant on start, since `self._showing_percent == 0.00`
+        self.update()
+
+    def animate_show(self) -> None:
+        self._state = Inventory.DisplayState.SHOWING
+        self.show()
+        for slot in self._slots:
+            slot.show()
+            slot.reset_states()
+
+    def animate_hide(self) -> None:
+        self._waited_1_frame = False
+        self._state = Inventory.DisplayState.HIDING
+
+    def is_open(self) -> bool:
+        return (
+            self.is_globally_visible()
+            and self._state is not Inventory.DisplayState.HIDING
+        )
 
     def update(self) -> None:
-        # Remove items that has a count of 0
-        for item, count in tuple(self._inventory_ref.items()):
-            if count == 0:
-                del self._inventory_ref[item]
-            elif count < 0:
-                raise ValueError(f"Item {repr(item)} has negative count: {count}")
-        # Update every frame because inventory items might be mutated
-        self._update_texture()
+        if keyboard.is_pressed("6"):
+            self.animate_hide()
+        elif keyboard.is_pressed("5"):
+            self.animate_show()
+        match self._state:
+            case Inventory.DisplayState.IDLE:
+                pass
+            case Inventory.DisplayState.SHOWING:
+                for slot, rest_position in zip(
+                    self._slots, self._slots_resting_positions
+                ):
+                    slot.position = self._HIDE_ANCHOR.lerp(
+                        rest_position, self._showing_percent
+                    )
+                if self._showing_percent == 1.00:
+                    self._state = Inventory.DisplayState.IDLE
+                self._showing_percent = min(
+                    self._showing_percent + self._SHOW_SPEED_PERCENT_PER_FRAME, 1.00
+                )
+            case Inventory.DisplayState.HIDING:
+                for slot, rest_position in zip(
+                    self._slots, self._slots_resting_positions
+                ):
+                    slot.position = self._HIDE_ANCHOR.lerp(
+                        rest_position, self._showing_percent
+                    )
+                if self._showing_percent == 0.00:
+                    if not self._waited_1_frame:
+                        self._waited_1_frame = True
+                        return
+                    self._state = Inventory.DisplayState.IDLE
+                    for slot in self._slots:
+                        slot.hide()
+                    self.hide()
+                self._showing_percent = max(
+                    self._showing_percent - self._HIDE_SPEED_PERCENT_PER_FRAME, 0.00
+                )
 
-    def _update_texture(self) -> None:
-        # Sort by items count
-        name_sorted = sorted(
-            self._inventory_ref.items(),
-            key=lambda pair: pair[0].name,
-        )
-        count_sorted = sorted(
-            name_sorted,
-            key=lambda pair: pair[1],
-            reverse=True,
-        )
-        self.texture = text.fill_lines(
-            [
-                f"- {item.name.capitalize().replace('_', ' ')}: {count}"
-                for item, count in count_sorted
-            ]
-        )
-        self.texture.insert(0, "Inventory:")
+        for slot, item in itertools.zip_longest(
+            self._slots, self.ref.ids(), fillvalue=None
+        ):
+            # Due to the nature of `itertools.zip_longest`,
+            # stop when no more slots available
+            if slot is None:
+                break
+            if item is None:
+                slot.clear_item()
+            else:
+                slot.set_item(item, self.ref.count(item))
 
 
 class HotbarE(UIElement, Label):
@@ -177,11 +397,11 @@ class OxygenBar(InfoBar):
     _SOUND_BREATHE = pygame.mixer.Sound(
         settings.SOUNDS_FOLDER / "ui" / "oxygen" / "breathe.wav"
     )
+    _SOUND_BREATHE.set_volume(0.08)
     _SOUND_BUBBLE = pygame.mixer.Sound(
         settings.SOUNDS_FOLDER / "ui" / "oxygen" / "bubble.wav"
     )
-    # DEV
-    _SOUND_BUBBLE.set_volume(0)
+    _SOUND_BUBBLE.set_volume(0.03)
     _CHANNEL_BREATH = pygame.mixer.Channel(2)
     _CHANNEL_BUBBLE = pygame.mixer.Channel(3)
     _LABEL = "O2"
@@ -278,7 +498,7 @@ class Crafting(UIElement, Panel):  # GUI
         selected_idgredient_counts: tuple[IdgredientCount, ...],
         all_recipe_states: list[tuple[Recipe, Craftable]],
     ) -> None:
-        self.height = len(all_recipe_states) + len(current_recipe.idgredients) + 2
+        self.height = len(all_recipe_states) + len(current_recipe.ingredients) + 2
 
         for products_label in self._info_labels:
             products_label.queue_free()
@@ -318,7 +538,7 @@ class Crafting(UIElement, Panel):  # GUI
 
             if recipe is current_recipe:
                 for index, (idgredient, idgredient_cost) in enumerate(
-                    recipe.idgredients.items()
+                    recipe.ingredients.items()
                 ):
                     idgredient_name = idgredient.name.replace("_", " ").capitalize()
                     idgredient_count = selected_idgredient_counts[index]
@@ -348,16 +568,16 @@ class HUDElement(UIElement, Sprite): ...
 
 
 class ComposedHUD(HUDElement):
-    def __init__(self, *, inventory_ref: dict[ItemID, Count]) -> None:
+    def __init__(self, *, inventory_ref: Container) -> None:
         self.health_bar = HealthBar(self)
         self.oxygen_bar = OxygenBar(self)
         self.hunger_bar = HungerBar(self)
         self.thirst_bar = ThirstBar(self)
-        Inventory(self, inventory_ref=inventory_ref)
-        HotbarE(self)
-        Hotbar1(self)
-        Hotbar2(self)
-        Hotbar3(self)
+        self.inventory = Inventory(self, ref=inventory_ref)
+        self.hotbar_e = HotbarE(self)
+        self.hotbar_1 = Hotbar1(self)
+        self.hotbar_2 = Hotbar2(self)
+        self.hotbar_3 = Hotbar3(self)
         self.crafting_gui = Crafting(self)
 
 

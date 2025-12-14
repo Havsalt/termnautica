@@ -10,14 +10,14 @@ class NutrientSynthesizer(Fabrication, Interactable, Sprite):
     _RECIPES = [
         Recipe(
             products={ItemID.WATER_BOTTLE: 1},
-            idgredients={
+            ingredients={
                 ItemID.BLADDER_FISH: 1,
                 ItemID.KELP: 2,
             },
         ),
         Recipe(
             products={ItemID.CHOCOLATE: 2},
-            idgredients={
+            ingredients={
                 ItemID.KELP: 2,
                 ItemID.COAL_ORE: 1,
             },
