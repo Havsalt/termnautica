@@ -5,7 +5,16 @@ from typing import NamedTuple, assert_never
 
 import colex
 import keyboard
-from charz import Camera, Sprite, Scene, Group, ColliderComponent, Hitbox, Vec2
+from charz import (
+    Camera,
+    Sprite,
+    Scene,
+    Group,
+    ColliderComponent,
+    Hitbox,
+    Vec2,
+    get_texture_size,
+)
 
 from . import gear_types, projectiles, settings, ui, ocean
 from .props import Collectable, Interactable, Building, Targetable
@@ -53,24 +62,95 @@ class MoveKeys(NamedTuple):
     down: Action = "s"
 
 
+class PlayerDeathDrop(Interactable, Sprite):
+    _SUBMERGE_SPEED: float = 3.2  # Units/s
+    _DETECTION_OFFSET: Vec2 = Vec2(1, 1.5)
+    _BUBBLE_SPAWN_OFFSET: Vec2 = Vec2(2, 3)
+    _BUBBLE_SPAWN_SPREAD: int = 3
+    color = colex.YELLOW
+    texture = [
+        " ╽ ",
+        "|#|",
+        "╰╴╯",
+    ]
+
+    def __init__(self) -> None:
+        self.inventory = SizedInventory(slot_limit=8)
+        self._ui = ui.InventoryWheel(self, self.inventory)
+        self._stop_submerging = False
+
+    def grab_focus(self) -> None:
+        super().grab_focus()
+        self._ui.animate_show()
+
+    def loose_focus(self) -> None:
+        super().loose_focus()
+        self._ui.animate_hide()
+
+    def on_interact(self, actor: Sprite) -> None:
+        assert isinstance(actor, Player), (
+            f"Only `{Player.__name__}` can loot `{self.__class__.__name__}`"
+        )
+        for item in self.inventory.ids():
+            count = self.inventory.count(item)
+            # Transfer loot
+            self.inventory.take(item, count)
+            actor.inventory.give(item, count)
+            break  # Only take 1 item
+        if not self.inventory.ids():
+            self._ui.animate_hide()
+
+    def update(self) -> None:
+        if not self.inventory.ids() and not self._ui.is_open():
+            self.queue_free()
+            Bubble().with_global_position(self.global_position)
+            return
+        if self._stop_submerging:
+            return
+
+        bubble = Bubble().with_global_position(
+            self.global_position + self._BUBBLE_SPAWN_OFFSET
+        )
+        bubble.position.x += random.randint(
+            -self._BUBBLE_SPAWN_SPREAD, self._BUBBLE_SPAWN_SPREAD
+        )
+
+        self.position.y += (1 / settings.FPS) * self._SUBMERGE_SPEED
+        if ocean.Floor.has_loose_point_inside(
+            self.global_position + self._DETECTION_OFFSET
+        ):
+            while ocean.Floor.has_loose_point_inside(
+                self.global_position + self._DETECTION_OFFSET
+            ):
+                self.position += Vec2.UP
+            self._stop_submerging = True
+
+
 class Player(ColliderComponent, Sprite):
     _GRAVITY: float = 0.91
+    _MAX_SPEED: Vec2 = Vec2(2, 2)
     _JUMP_STRENGTH: float = 4
     _AIR_FRICTION: float = 0.7
+    _WATER_FRICTION: float = 0.3
+
     _HUNGER_RATE: float = 0.25
     _THIRST_RATE: float = 0.25
     _OXYGEN_RATE: float = 30
-    _WATER_FRICTION: float = 0.3
-    _MAX_SPEED: Vec2 = Vec2(2, 2)
+
+    _DEATH_DROP_OFFSET: Vec2 = Vec2(-2, -1)
+    _HUD_TYPE: type[ui.ComposedHUD] = ui.ComposedHUD
+
     _DROWN_DAMAGE: float = 40  # Per second
     _CRITICAL_DEPTH_DROWN_DAMAGE_MULTIPLIER: float = 5
     _CRITICAL_DEPTH_AIR_CONSUMPTION_MULTIPLIER: float = 3
+
     _RANGED_REACH: float = 40
+
     _ACTIONS: Actions = Actions()
     _KEY_MODIFIERS: KeyModifiers = KeyModifiers()
     _MOVE_KEYS: MoveKeys = MoveKeys()
-    _HUD_TYPE: type[ui.ComposedHUD] = ui.ComposedHUD
-    hitbox = Hitbox(size=Vec2(5, 3), centered=True)
+
+    hitbox = Hitbox(size=Vec2(5, 3))
     z_index = 1
     color = colex.AQUA
     transparency = " "
@@ -541,21 +621,38 @@ class Player(ColliderComponent, Sprite):
             case ItemID.IMPROVED_DIVING_MASK:
                 self.texture[0] = " [#]"
 
-    # TODO: Implement
     def on_death(self) -> None:
+        # Reset stats
         self.health = self.hud.health_bar.MAX_VALUE
+        self.hud.hunger_bar.value = self.hud.hunger_bar.MAX_VALUE
+        self.hud.thirst_bar.value = self.hud.thirst_bar.MAX_VALUE
+
+        # Drop loot sack
+        if self.inventory.ids():
+            sack = PlayerDeathDrop().with_global_position(
+                self.global_position + self._DEATH_DROP_OFFSET
+            )
+            for item in self.inventory.ids():
+                count = self.inventory.count(item)
+                # Transfer loot
+                self.inventory.take(item, count)
+                sack.inventory.give(item, count)
+            self.inventory.clear()
+
+        # TP back to surface air
         self.global_position = Vec2(20 + random.randint(0, 20), -20)
         while self.is_colliding():  # Avoid colliding with player in air at respawn
             self.global_position = Vec2(20 + random.randint(0, 20), -20)
-        self.inventory.clear()
-        
+
         # Hide inventory UI instantly
         self.hud.inventory.animate_hide()
         self.hud.inventory.hide()
-        
+
+        # Release current interactable focus
         self.parent = None  # Just in case, temp anyways...
         if isinstance(self._current_interactable, Interactable):
             self._current_interactable.loose_focus()
+
         # Reset states
         self._current_interactable = None
         self._current_action = None

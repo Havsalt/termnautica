@@ -8,7 +8,7 @@ import pygame
 import keyboard
 import colex
 from colex import ColorValue
-from charz import Node, Sprite, Label, Vec2, clamp, group
+from charz import Node, Sprite, Label, Vec2, Self, clamp, group
 
 from . import settings
 from .item import ItemID, Recipe, Container
@@ -25,7 +25,7 @@ type Char = str
 
 _UI_LEFT_OFFSET: int = -38
 _UI_RIGHT_OFFSET: int = 40
-_UI_CHANNEL = pygame.mixer.Channel(0)
+_UI_MIXER_CHANNEL = pygame.mixer.Channel(0)
 
 
 # TODO: Render `UIElement` on top of screen buffer (Would be nice with `FrameTask`)
@@ -149,11 +149,11 @@ class InventoryCenterMarker(UIElement, Sprite):
 
 
 # This is *not* a `Node2D`, because `Node2D` does not handle `.visible` in a tree
-class Inventory(UIElement, Sprite):
+class InventoryWheel(UIElement, Sprite):
     _NAME_LENGTH: int = 6
     _SHOW_SPEED_PERCENT_PER_FRAME: float = 0.23
     _HIDE_SPEED_PERCENT_PER_FRAME: float = 0.27
-    _HIDE_ANCHOR: Vec2 = Vec2(18.5, -4)
+    hide_anchor: Vec2 = Vec2(18.5, -4)
     position = Vec2(_UI_LEFT_OFFSET + 10, 4)
 
     @unique
@@ -169,7 +169,7 @@ class Inventory(UIElement, Sprite):
     ) -> None:
         super().__init__(parent=parent)
         self.ref = ref
-        self._state = Inventory.DisplayState.IDLE
+        self._state = InventoryWheel.DisplayState.IDLE
         self._elements: list[Sprite] = [
             # Center Piviot
             InventoryCenterMarker().with_parent(self).with_position(Vec2.ZERO),
@@ -223,8 +223,13 @@ class Inventory(UIElement, Sprite):
         self.animate_hide()  # NOTE: Will be instant on start, since `self._showing_percent == 0.00`
         self.update()
 
+    def with_hide_anchor(self, hide_anchor: Vec2, /) -> Self:
+        self.hide_anchor = hide_anchor
+        # Vec2(18.5, -4)
+        return self
+
     def animate_show(self) -> None:
-        self._state = Inventory.DisplayState.SHOWING
+        self._state = InventoryWheel.DisplayState.SHOWING
         self.show()
         for slot in self._slots:
             slot.show()
@@ -232,12 +237,12 @@ class Inventory(UIElement, Sprite):
 
     def animate_hide(self) -> None:
         self._waited_1_frame = False
-        self._state = Inventory.DisplayState.HIDING
+        self._state = InventoryWheel.DisplayState.HIDING
 
     def is_open(self) -> bool:
         return (
             self.is_globally_visible()
-            and self._state is not Inventory.DisplayState.HIDING
+            and self._state is not InventoryWheel.DisplayState.HIDING
         )
 
     def update(self) -> None:
@@ -246,32 +251,32 @@ class Inventory(UIElement, Sprite):
         elif keyboard.is_pressed("5"):
             self.animate_show()
         match self._state:
-            case Inventory.DisplayState.IDLE:
+            case InventoryWheel.DisplayState.IDLE:
                 pass
-            case Inventory.DisplayState.SHOWING:
+            case InventoryWheel.DisplayState.SHOWING:
                 for slot, rest_position in zip(
                     self._slots, self._slots_resting_positions
                 ):
-                    slot.position = self._HIDE_ANCHOR.lerp(
+                    slot.position = self.hide_anchor.lerp(
                         rest_position, self._showing_percent
                     )
                 if self._showing_percent == 1.00:
-                    self._state = Inventory.DisplayState.IDLE
+                    self._state = InventoryWheel.DisplayState.IDLE
                 self._showing_percent = min(
                     self._showing_percent + self._SHOW_SPEED_PERCENT_PER_FRAME, 1.00
                 )
-            case Inventory.DisplayState.HIDING:
+            case InventoryWheel.DisplayState.HIDING:
                 for slot, rest_position in zip(
                     self._slots, self._slots_resting_positions
                 ):
-                    slot.position = self._HIDE_ANCHOR.lerp(
+                    slot.position = self.hide_anchor.lerp(
                         rest_position, self._showing_percent
                     )
                 if self._showing_percent == 0.00:
                     if not self._waited_1_frame:
                         self._waited_1_frame = True
                         return
-                    self._state = Inventory.DisplayState.IDLE
+                    self._state = InventoryWheel.DisplayState.IDLE
                     for slot in self._slots:
                         slot.hide()
                     self.hide()
@@ -283,7 +288,7 @@ class Inventory(UIElement, Sprite):
             self._slots, self.ref.ids(), fillvalue=None
         ):
             # Due to the nature of `itertools.zip_longest`,
-            # stop when no more slots available
+            # stop when no more slots are available
             if slot is None:
                 break
             if item is None:
@@ -386,7 +391,7 @@ class HealthBar(InfoBar):
 
     def on_change(self, change: float, _cells_changed: int) -> None:
         if change > 0:
-            _UI_CHANNEL.play(self._SOUND_HEAL)
+            _UI_MIXER_CHANNEL.play(self._SOUND_HEAL)
         elif change < 0 and not self._CHANNEL_HURT.get_busy():
             self._CHANNEL_HURT.play(self._SOUND_HURT)
 
@@ -572,7 +577,7 @@ class ComposedHUD(HUDElement):
         self.oxygen_bar = OxygenBar(self)
         self.hunger_bar = HungerBar(self)
         self.thirst_bar = ThirstBar(self)
-        self.inventory = Inventory(self, ref=inventory_ref)
+        self.inventory = InventoryWheel(self, ref=inventory_ref)
         self.hotbar_e = HotbarE(self)
         self.hotbar_1 = Hotbar1(self)
         self.hotbar_2 = Hotbar2(self)
