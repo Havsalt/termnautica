@@ -4,15 +4,15 @@ requires-python = ">=3.13"
 
 [[package]]
 name = "charz"
-version = "0.1.2"
+version = "0.1.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "charz-core" },
     { name = "colex" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a9/78/97ad730eda278201d2033d105323cb575e8bbe1bc4d9ac995047d0e3af9e/charz-0.1.2.tar.gz", hash = "sha256:d6066eb224d49e0970e0aa47a1d30e1ee12e07f8ad5af913d441be41f2a06ff2", size = 28790, upload-time = "2025-12-06T13:47:43.96Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/33/75/125b7f9547f2cda74b3a38ddea4deb0b6e2d40e03f045e1868d320f4a1f2/charz-0.1.3.tar.gz", hash = "sha256:f7d4c2938775c338b3c724e494ee6fdf4cfd678d4aa737cbbbad2bfd8c9ab4b1", size = 28817, upload-time = "2025-12-10T16:33:40.494Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c6/0c/04f3c8f312b7c564015ebbdd5b7ff7e410733a8cdae9106270d7b075adc7/charz-0.1.2-py3-none-any.whl", hash = "sha256:d509ba854fbda5a342ba5d79d2a53053d574695b303ddb0f87cdc382396b2833", size = 37680, upload-time = "2025-12-06T13:47:42.703Z" },
+    { url = "https://files.pythonhosted.org/packages/e8/bc/fd97b89f75bce8e015435567fbe4f00f05b420f2bc83a602a3b99b8dc78a/charz-0.1.3-py3-none-any.whl", hash = "sha256:b8aa3e53d9e99a2942c9150b8aafe4569b85d43fea12c167c359fa94846de5f0", size = 37721, upload-time = "2025-12-10T16:33:39.326Z" },
 ]
 
 [package.optional-dependencies]
@@ -22,14 +22,14 @@ all = [
 
 [[package]]
 name = "charz-core"
-version = "0.1.3"
+version = "0.1.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "linflex" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6b/a2/f4bb5c82d3140eda1733f1be7139ecc9d484522e1065fa15abb2f769a09e/charz_core-0.1.3.tar.gz", hash = "sha256:0d71a22ea87dfb5e4afc42c0758612346691a336a1a12132f4e34986c53ca85c", size = 12886, upload-time = "2025-12-06T13:33:14.827Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bb/ab/b572265eb8d0e6fcea1b75d86545f63c9f49b2149a043059c4047b599913/charz_core-0.1.4.tar.gz", hash = "sha256:d13267ad6f088f4d72b7a12fddf79a22524685b41ecf7ad646a7aa7f0edf42e5", size = 12944, upload-time = "2025-12-13T11:17:48.979Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/62/95/46d73435a3b9b0f5ac1af293d51d1e058415f72ee5075d881639b70ef3a1/charz_core-0.1.3-py3-none-any.whl", hash = "sha256:0d897004de41c32dfd1bb9a43f4c9583b83dee71183145bd2fadeef996c691e1", size = 17006, upload-time = "2025-12-06T13:33:13.51Z" },
+    { url = "https://files.pythonhosted.org/packages/3c/5d/84181c550ca2b0da0bbd23a09bb494c9baa589c0f286a083af85085951cc/charz_core-0.1.4-py3-none-any.whl", hash = "sha256:e346a7381e0c9dde25d85436cb21e904805de84f9e27a954c4dcd97ac229d131", size = 17036, upload-time = "2025-12-13T11:17:47.785Z" },
 ]
 
 [[package]]
@@ -65,7 +65,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "charz", extras = ["all"], specifier = "~=0.1.2" },
+    { name = "charz", extras = ["all"], specifier = "~=0.1.0" },
     { name = "charz-rust", specifier = ">=0.2.3" },
     { name = "pygame", specifier = "~=2.6" },
 ]

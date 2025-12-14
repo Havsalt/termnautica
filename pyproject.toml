@@ -14,7 +14,7 @@ authors = [
 ]
 dependencies = [
     "charz-rust>=0.2.3",
-    "charz[all]~=0.1.2",
+    "charz[all]~=0.1.0",
     "pygame~=2.6",
 ]
 readme = "README.md"
