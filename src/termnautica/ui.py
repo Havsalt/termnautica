@@ -154,7 +154,6 @@ class Inventory(UIElement, Sprite):
     _SHOW_SPEED_PERCENT_PER_FRAME: float = 0.23
     _HIDE_SPEED_PERCENT_PER_FRAME: float = 0.27
     _HIDE_ANCHOR: Vec2 = Vec2(18.5, -4)
-    # position = Vec2(_UI_LEFT_OFFSET, 0)
     position = Vec2(_UI_LEFT_OFFSET + 10, 4)
 
     @unique
