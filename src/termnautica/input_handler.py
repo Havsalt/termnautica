@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from enum import Enum, unique, auto
-from typing import Protocol, NewType
+from typing import Protocol, assert_never
 
 import keyboard
 import pygame
@@ -214,6 +213,8 @@ class Controller:
                 return strength < -trigger.deadzone / 100
             case None:
                 return abs(strength) > trigger.deadzone / 100
+            case _:
+                assert_never(trigger.limit)
 
     def is_action_just_pressed(self, action: Action) -> bool:
         return (  # fmt: off
