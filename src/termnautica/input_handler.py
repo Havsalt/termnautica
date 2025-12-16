@@ -38,7 +38,12 @@ class Action(Enum):
 
 
 class InputHandler(Protocol):
-    def capture_states(self) -> None: ...
+    def capture_states(self) -> None:
+        """Capture press state of all `Action` variants, used for monitoring changes over time.
+
+        Should be called at the start of the frame, *before* actions are checked for.
+        """
+
     def is_action_pressed(self, action: Action) -> bool: ...
     def is_action_just_pressed(self, action: Action) -> bool: ...
     def get_vector(
