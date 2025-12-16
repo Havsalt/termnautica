@@ -1,0 +1,223 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from enum import Enum, unique, auto
+from typing import Protocol, NewType
+
+import keyboard
+import pygame
+from charz import Vec2
+
+
+type ActionMap[V] = dict[Action, V]
+type Percent = int
+"""Example: `x: Percent = 10`, meaning *10%*. When computing: `result = x / 100`"""
+
+
+@unique
+class Action(Enum):
+    MOVE_LEFT = auto()
+    MOVE_RIGHT = auto()
+    MOVE_UP = auto()
+    MOVE_DOWN = auto()
+    JUMP = auto()
+
+    INTERACT = auto()
+    CRAFT = auto()  # NOTE: Might be redundant because of `INTERACT` variant
+    ATTACK = auto()  # NOTE: Might be redundant because of `INTERACT` variant
+    THROW_HARPOON = auto()
+
+    EAT = auto()
+    DRINK = auto()
+    HEAL = auto()
+
+    SCROLL_UP = auto()
+    SCROLL_DOWN = auto()
+    CONFIRM = auto()
+    OPEN_INVENTORY = auto()
+
+
+class InputHandler(Protocol):
+    def capture_states(self) -> None: ...
+    def is_action_pressed(self, action: Action) -> bool: ...
+    def is_action_just_pressed(self, action: Action) -> bool: ...
+    def get_vector(
+        self,
+        negative_x: Action,
+        positive_x: Action,
+        negative_y: Action,
+        positive_y: Action,
+    ) -> Vec2: ...
+
+
+class Keyboard:
+    type Key = str | int
+    type ScanCode = int
+    type KeyCombination = str | list[ScanCode]
+
+    def __init__(
+        self,
+        action_map: ActionMap[Keyboard.Key | Keyboard.KeyCombination] | None = None,
+        modifier_key: Keyboard.Key = "Shift",
+    ) -> None:
+        self._action_states = dict[Action, bool]()
+        self._last_action_states = dict[Action, bool]()
+        self._modifier_key = modifier_key
+        self._action_map = {  # Adding defaults at bottom of dict
+            Action.MOVE_LEFT: "A",
+            Action.MOVE_RIGHT: "D",
+            Action.MOVE_UP: "W",
+            Action.MOVE_DOWN: "S",
+            Action.JUMP: "Space",
+            #
+            Action.INTERACT: "E",
+            Action.CRAFT: "E",
+            Action.ATTACK: "E",
+            Action.THROW_HARPOON: "R",
+            #
+            Action.EAT: "1",
+            Action.DRINK: "2",
+            Action.HEAL: "3",
+            #
+            Action.SCROLL_UP: "{modifier}+Tab",
+            Action.SCROLL_DOWN: "Tab",
+            Action.CONFIRM: "Q",
+            Action.OPEN_INVENTORY: "F",
+        } | (action_map or {})  # Adds default actions if not defined
+        assert all(map(self._action_map.__contains__, Action)), "Missing actions"
+
+    def capture_states(self) -> None:
+        self._last_action_states = self._action_states
+        self._action_states = {
+            action: self.is_action_pressed(action) for action in Action
+        }
+
+    def is_action_pressed(self, action: Action) -> bool:
+        trigger = self._action_map[action]
+        if isinstance(trigger, str):
+            keys = trigger.format(modifier=self._modifier_key)
+            return keyboard.is_pressed(keys)
+        else:
+            # Single or multiple scancode list
+            return keyboard.is_pressed(trigger)
+
+    def is_action_just_pressed(self, action: Action) -> bool:
+        return (  # fmt: off
+            not self._last_action_states.get(action, True)
+            and self.is_action_pressed(action)
+        )  # fmt: on
+
+    def get_vector(
+        self,
+        negative_x: Action,
+        positive_x: Action,
+        negative_y: Action,
+        positive_y: Action,
+    ) -> Vec2:
+        return Vec2(
+            self.is_action_pressed(positive_x) - self.is_action_pressed(negative_x),
+            self.is_action_pressed(positive_y) - self.is_action_pressed(negative_y),
+        )
+
+
+class Controller:
+    type Button = int
+    type Axis = int
+
+    class Trigger:
+        @unique
+        class Limit(Enum):
+            POSITIVE = auto()
+            NEGATIVE = auto()
+
+        def __init__(
+            self,
+            axis: Controller.Axis,
+            limit: Controller.Trigger.Limit | None = None,
+            deadzone: Percent = 10,
+        ) -> None:
+            if deadzone <= 0:
+                raise ValueError(f"Param 'deadzone' <= 0, got {deadzone}")
+            self.axis = axis
+            self.limit = limit
+            self.deadzone = deadzone
+
+    def __init__(
+        self,
+        action_map: ActionMap[Controller.Button | Controller.Trigger] | None = None,
+    ) -> None:
+        # TODO: Map joystick ID
+        self._joystick = pygame.joystick.Joystick(0)
+        self._action_map = {  # Adding defaults at bottom of dict
+            Action.MOVE_LEFT: Controller.Trigger(
+                pygame.CONTROLLER_AXIS_LEFTX,
+                Controller.Trigger.Limit.NEGATIVE,
+            ),
+            Action.MOVE_RIGHT: Controller.Trigger(
+                pygame.CONTROLLER_AXIS_LEFTX,
+                Controller.Trigger.Limit.POSITIVE,
+            ),
+            Action.MOVE_UP: Controller.Trigger(
+                pygame.CONTROLLER_AXIS_LEFTY,
+                Controller.Trigger.Limit.POSITIVE,
+            ),
+            Action.MOVE_DOWN: Controller.Trigger(
+                pygame.CONTROLLER_AXIS_LEFTY,
+                Controller.Trigger.Limit.NEGATIVE,
+            ),
+            Action.JUMP: pygame.CONTROLLER_BUTTON_A,
+            #
+            Action.INTERACT: pygame.CONTROLLER_BUTTON_X,
+            Action.CRAFT: pygame.CONTROLLER_BUTTON_Y,
+            Action.ATTACK: pygame.CONTROLLER_BUTTON_A,
+            Action.THROW_HARPOON: pygame.CONTROLLER_BUTTON_LEFTSHOULDER,
+            #
+            Action.EAT: pygame.CONTROLLER_BUTTON_A,
+            Action.DRINK: pygame.CONTROLLER_BUTTON_A,
+            Action.HEAL: pygame.CONTROLLER_BUTTON_A,
+            #
+            Action.SCROLL_UP: pygame.CONTROLLER_BUTTON_LEFTSHOULDER,
+            Action.SCROLL_DOWN: pygame.CONTROLLER_BUTTON_RIGHTSHOULDER,
+            Action.CONFIRM: pygame.CONTROLLER_BUTTON_A,
+            Action.OPEN_INVENTORY: pygame.CONTROLLER_BUTTON_A,
+        } | (action_map or {})  # Adds default actions if not defined
+        assert all(map(self._action_map.__contains__, Action)), "Missing actions"
+
+    def capture_states(self) -> None:
+        self._last_action_states = self._action_states
+        self._action_states = {
+            action: self.is_action_pressed(action) for action in Action
+        }
+
+    def is_action_pressed(self, action: Action) -> bool:
+        trigger = self._action_map[action]
+
+        if not isinstance(trigger, Controller.Trigger):
+            return self._joystick.get_button(trigger)
+
+        strength = self._joystick.get_axis(trigger.axis)
+        match trigger.limit:
+            case Controller.Trigger.Limit.POSITIVE:
+                return strength > trigger.deadzone / 100
+            case Controller.Trigger.Limit.NEGATIVE:
+                return strength < -trigger.deadzone / 100
+            case None:
+                return abs(strength) > trigger.deadzone / 100
+
+    def is_action_just_pressed(self, action: Action) -> bool:
+        return (  # fmt: off
+            not self._last_action_states.get(action, True)
+            and self.is_action_pressed(action)
+        )  # fmt: on
+
+    def get_vector(
+        self,
+        negative_x: Action,
+        positive_x: Action,
+        negative_y: Action,
+        positive_y: Action,
+    ) -> Vec2:
+        return Vec2(
+            self.is_action_pressed(positive_x) - self.is_action_pressed(negative_x),
+            self.is_action_pressed(positive_y) - self.is_action_pressed(negative_y),
+        )

@@ -1,10 +1,9 @@
 import random
 from math import floor
 from copy import deepcopy
-from typing import NamedTuple, assert_never
+from typing import assert_never
 
 import colex
-import keyboard
 from charz import (
     Camera,
     Sprite,
@@ -13,10 +12,10 @@ from charz import (
     ColliderComponent,
     Hitbox,
     Vec2,
-    get_texture_size,
 )
 
 from . import gear_types, projectiles, settings, ui, ocean
+from .input_handler import InputHandler, Keyboard, Controller, Action
 from .props import Collectable, Interactable, Building, Targetable
 from .fabrication import Fabrication
 from .particles import Bubble, Blood
@@ -25,41 +24,11 @@ from .utils import move_toward
 
 
 type ActionName = str
-type Action = str | int
 type Count = int
 
 
 ARROW_UP: int = 72
 ARROW_DOWN: int = 80
-
-
-class Actions(NamedTuple):  # Order is also precedence - First is highest
-    # NOTE: These 2 constants has to be checked before numeric strings
-    scroll_up: Action = ARROW_UP
-    scroll_down: Action = ARROW_DOWN
-
-    interact: Action = "e"
-    eat: Action = "1"
-    drink: Action = "2"
-    heal: Action = "3"
-    throw_harpoon: Action = "r"
-    jump: Action = "space"
-    tab: Action = "tab"
-    confirm: Action = "enter"
-    scroll_up2: Action = "k"
-    scroll_down2: Action = "j"
-    open_inventory: Action = "f"
-
-
-class KeyModifiers(NamedTuple):
-    shift: Action = "shift"
-
-
-class MoveKeys(NamedTuple):
-    left: Action = "a"
-    right: Action = "d"
-    up: Action = "w"
-    down: Action = "s"
 
 
 class PlayerDeathDrop(Interactable, Sprite):
@@ -146,9 +115,7 @@ class Player(ColliderComponent, Sprite):
 
     _RANGED_REACH: float = 40
 
-    _ACTIONS: Actions = Actions()
-    _KEY_MODIFIERS: KeyModifiers = KeyModifiers()
-    _MOVE_KEYS: MoveKeys = MoveKeys()
+    _input_handler: InputHandler = Keyboard()
 
     hitbox = Hitbox(size=Vec2(5, 3))
     z_index = 1
@@ -161,8 +128,6 @@ class Player(ColliderComponent, Sprite):
         " / \\",
     ]
     _y_speed: float = 0
-    _current_action: Action | None = None
-    _key_just_pressed: bool = False
     _current_interactable: Sprite | None = None
     _current_targetable: Sprite | None = None
 
@@ -176,9 +141,7 @@ class Player(ColliderComponent, Sprite):
         self._harpoon = gear_types.Harpoon(model=ItemID.MAKESHIFT_HARPOON)
         # UI
         # NOTE: Current `Camera` has to be initialized before `Player.__init__` is called
-        self.hud = self._HUD_TYPE(inventory_ref=self.inventory).with_parent(
-            Camera.current
-        )
+        self.hud = self._HUD_TYPE(Camera.current, inventory_ref=self.inventory)
 
     @property
     def health(self) -> float:
@@ -207,7 +170,7 @@ class Player(ColliderComponent, Sprite):
 
     def update(self) -> None:
         # Order of tasks
-        self.handle_action_input()
+        self._input_handler.capture_states()
         self.handle_gui()
         self.handle_movement()
         self.handle_interact_selection()
@@ -283,31 +246,25 @@ class Player(ColliderComponent, Sprite):
                 assert_never(slot)
 
     def handle_eating(self) -> None:
-        if not (self._current_action == self._ACTIONS.eat and self._key_just_pressed):
-            return
-
-        for item in self.inventory.ids():
-            if item in consumables and ConsumableStat.HUNGER in consumables[item]:
-                self.consume_item(item)
-                break
+        if self._input_handler.is_action_just_pressed(Action.EAT):
+            for item in self.inventory.ids():
+                if item in consumables and ConsumableStat.HUNGER in consumables[item]:
+                    self.consume_item(item)
+                    break
 
     def handle_drinking(self) -> None:
-        if not (self._current_action == self._ACTIONS.drink and self._key_just_pressed):
-            return
-
-        for item in self.inventory.ids():
-            if item in consumables and ConsumableStat.THIRST in consumables[item]:
-                self.consume_item(item)
-                break
+        if self._input_handler.is_action_just_pressed(Action.DRINK):
+            for item in self.inventory.ids():
+                if item in consumables and ConsumableStat.THIRST in consumables[item]:
+                    self.consume_item(item)
+                    break
 
     def handle_healing(self) -> None:
-        if not (self._current_action == self._ACTIONS.heal and self._key_just_pressed):
-            return
-
-        for item in self.inventory.ids():
-            if item in consumables and ConsumableStat.HEALING in consumables[item]:
-                self.consume_item(item)
-                break
+        if self._input_handler.is_action_just_pressed(Action.HEAL):
+            for item in self.inventory.ids():
+                if item in consumables and ConsumableStat.HEALING in consumables[item]:
+                    self.consume_item(item)
+                    break
 
     def is_submerged(self) -> bool:
         self_height = self.global_position.y - self.get_texture_size().y / 2
@@ -341,54 +298,23 @@ class Player(ColliderComponent, Sprite):
                     return True
         return False
 
-    def handle_action_input(self) -> None:
-        if self._current_action is None:
-            # Check for pressed
-            for action in self._ACTIONS:
-                if keyboard.is_pressed(action):
-                    self._current_action = action
-                    self._key_just_pressed = True
-                    break
-        elif self._key_just_pressed:
-            # Deactivate "bool signal" after 1 single frame
-            self._key_just_pressed = False
-        elif not keyboard.is_pressed(self._current_action):
-            # Release
-            self._current_action = None
-
     def handle_gui(self) -> None:
-        if not self._key_just_pressed:
-            return
         if not isinstance(self._current_interactable, Fabrication):
-            if self._current_action == self._ACTIONS.open_inventory:
+            if self._input_handler.is_action_just_pressed(Action.OPEN_INVENTORY):
                 if self.hud.inventory.is_open():
                     self.hud.inventory.animate_hide()
                 else:
                     self.hud.inventory.animate_show()
             return
-        if (
-            self._current_action == self._ACTIONS.scroll_down
-            or self._current_action == self._ACTIONS.scroll_down2
-            or (
-                self._current_action == self._ACTIONS.tab
-                and not keyboard.is_pressed(self._KEY_MODIFIERS.shift)
-            )
-        ):
+        if self._input_handler.is_action_just_pressed(Action.SCROLL_DOWN):
             self._current_interactable.attempt_select_next_recipe()
-        elif (
-            self._current_action == self._ACTIONS.scroll_up
-            or self._current_action == self._ACTIONS.scroll_up2
-            or (
-                self._current_action == self._ACTIONS.tab
-                and keyboard.is_pressed(self._KEY_MODIFIERS.shift)
-            )
-        ):
+        elif self._input_handler.is_action_just_pressed(Action.SCROLL_UP):
             self._current_interactable.attempt_select_previous_recipe()
 
     def handle_movement_in_building(self, velocity: Vec2) -> None:
         assert isinstance(self.parent, Building)
         # TODO: Check if is on floor first
-        if self._current_action == self._ACTIONS.jump and self._key_just_pressed:
+        if self._input_handler.is_action_just_pressed(Action.JUMP):
             self._y_speed = -self._JUMP_STRENGTH
         combined_velocity = Vec2(velocity.x, self._y_speed).clamp(
             -self._MAX_SPEED,
@@ -399,11 +325,12 @@ class Player(ColliderComponent, Sprite):
         self._y_speed = move_toward(self._y_speed, 0, self._AIR_FRICTION)
 
     def handle_movement(self) -> None:
-        velocity = Vec2(
-            keyboard.is_pressed(self._MOVE_KEYS.right)
-            - keyboard.is_pressed(self._MOVE_KEYS.left),
-            keyboard.is_pressed(self._MOVE_KEYS.down)
-            - keyboard.is_pressed(self._MOVE_KEYS.up),
+        # TODO: Apply axis snapping
+        velocity = self._input_handler.get_vector(
+            Action.MOVE_LEFT,
+            Action.MOVE_RIGHT,
+            Action.MOVE_UP,
+            Action.MOVE_DOWN,
         )
         # Is in builindg movement
         if self.is_in_building():
@@ -516,11 +443,9 @@ class Player(ColliderComponent, Sprite):
             return
         assert isinstance(self._current_interactable, Interactable)
         # Trigger interaction function
-        if self._key_just_pressed and (
-            self._current_action == self._ACTIONS.interact
-            or self._current_action == self._ACTIONS.confirm
-        ):
+        if self._input_handler.is_action_just_pressed(Action.INTERACT):
             # TODO: Check for z_index change, so that it respects z_index change in on_interact
+            # TODO: Check if current interactable is capable of crafting -> Use `Action.CRAFTING`
             self._current_interactable.on_interact(self)
 
     def handle_target_selection(self) -> None:
@@ -553,8 +478,7 @@ class Player(ColliderComponent, Sprite):
             self._current_targetable = first
             # TODO: Do Harpoon aiming here, and fire if key pressed
             if (
-                self._key_just_pressed
-                and self._current_action == self._ACTIONS.throw_harpoon
+                self._input_handler.is_action_just_pressed(Action.THROW_HARPOON)
                 and self._harpoon.model is not None
             ):
                 harpoon_info = gear[self._harpoon.model]
@@ -575,10 +499,7 @@ class Player(ColliderComponent, Sprite):
             return
         assert isinstance(self._current_targetable, Targetable)
         # Trigger interaction function
-        if self._key_just_pressed and (
-            self._current_action == self._ACTIONS.interact
-            or self._current_action == self._ACTIONS.confirm
-        ):
+        if self._input_handler.is_action_just_pressed(Action.INTERACT):
             # TODO: Check for z_index change, so that it respects z_index change in on_interact
             self._current_targetable.gain_target()
 
@@ -589,10 +510,7 @@ class Player(ColliderComponent, Sprite):
             return
         # Collect collectable that is selected
         # `self._current_interactable` is already in reach
-        if self._key_just_pressed and (
-            self._current_action == self._ACTIONS.interact
-            or self._current_action == self._ACTIONS.confirm
-        ):
+        if self._input_handler.is_action_just_pressed(Action.INTERACT):
             self._current_interactable.collect_into(self.inventory)
             self._current_interactable.queue_free()
             self._current_interactable = None
@@ -663,44 +581,32 @@ class Player(ColliderComponent, Sprite):
 
 
 class Player1(Player):
+    _HUD_TYPE = ui.ComposedHUD1
     position = Vec2(17, -3)
     color = colex.CYAN
-    _HUD_TYPE = ui.ComposedHUD1
-    _ACTIONS = Actions(
-        confirm="q",
-        # These 2 are basically set to something unused
-        scroll_up2="%",
-        scroll_down2="&",
-    )
-    _KEY_MODIFIERS = KeyModifiers()
-    _MOVE_KEYS = MoveKeys()
+    _input_handler = Keyboard()
 
 
 class Player2(Player):
+    _HUD_TYPE = ui.ComposedHUD2
     position = Vec2(-15, -3)
     color = colex.YELLOW
-    _HUD_TYPE = ui.ComposedHUD2
-    _ACTIONS = Actions(
-        interact="ø",
-        confirm="m",
-        eat="y",
-        drink="u",
-        heal="o",
-        tab="i",
-        jump="p",
-        scroll_up=",",
-        scroll_down=".",
-        scroll_up2="+",
-        scroll_down2="0",
-        throw_harpoon="-",
-        open_inventory="n",
-    )
-    _KEY_MODIFIERS = KeyModifiers(
-        shift="alt gr",
-    )
-    _MOVE_KEYS = MoveKeys(
-        left="h",
-        right="l",
-        down="j",
-        up="k",
+    _input_handler = Keyboard(
+        {
+            Action.MOVE_LEFT: "H",
+            Action.MOVE_RIGHT: "L",
+            Action.MOVE_DOWN: "J",
+            Action.MOVE_UP: "K",
+            Action.INTERACT: "Ø",
+            Action.CONFIRM: "M",
+            Action.EAT: "Y",
+            Action.DRINK: "U",
+            Action.HEAL: "I",
+            Action.JUMP: "P",
+            Action.SCROLL_UP: ",",
+            Action.SCROLL_DOWN: ".",
+            Action.THROW_HARPOON: "-",
+            Action.OPEN_INVENTORY: "N",
+        },
+        modifier_key="Alt Gr",
     )

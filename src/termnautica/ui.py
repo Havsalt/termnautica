@@ -572,7 +572,8 @@ class HUDElement(UIElement, Sprite): ...
 
 
 class ComposedHUD(HUDElement):
-    def __init__(self, *, inventory_ref: Container) -> None:
+    def __init__(self, parent: Node | None = None, *, inventory_ref: Container) -> None:
+        super().__init__(parent=parent)
         self.health_bar = HealthBar(self)
         self.oxygen_bar = OxygenBar(self)
         self.hunger_bar = HungerBar(self)
