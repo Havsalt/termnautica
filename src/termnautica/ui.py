@@ -8,7 +8,7 @@ import pygame
 import keyboard
 import colex
 from colex import ColorValue
-from charz import Node, Sprite, Label, Vec2, Self, clamp, group
+from charz import Node, Sprite, Label, Vec2, clamp, group
 
 from . import settings
 from .item import ItemID, Recipe, Container
@@ -24,8 +24,6 @@ type Char = str
 """`String` of length `1`."""
 
 
-_UI_LEFT_OFFSET: int = -38
-_UI_RIGHT_OFFSET: int = 40
 _UI_MIXER_CHANNEL = pygame.mixer.Channel(0)
 
 
@@ -154,8 +152,6 @@ class InventoryWheel(UIElement, Sprite):
     _NAME_LENGTH: int = 6
     _SHOW_SPEED_PERCENT_PER_FRAME: float = 0.23
     _HIDE_SPEED_PERCENT_PER_FRAME: float = 0.27
-    hide_anchor: Vec2 = Vec2(18.5, -4)
-    position = Vec2(_UI_LEFT_OFFSET + 10, 4)
 
     @unique
     class DisplayState(Enum):
@@ -164,16 +160,15 @@ class InventoryWheel(UIElement, Sprite):
         HIDING = auto()
 
     def __init__(
-        self,
-        parent: Node,
-        ref: Container,
+        self, parent: Node, ref: Container, hide_anchor: Vec2 = Vec2.ZERO
     ) -> None:
         super().__init__(parent=parent)
         self.ref = ref
+        self.hide_anchor = hide_anchor
         self._state = InventoryWheel.DisplayState.IDLE
         self._elements: list[Sprite] = [
             # Center Piviot
-            InventoryCenterMarker().with_parent(self).with_position(Vec2.ZERO),
+            InventoryCenterMarker().with_parent(self),
             # 1
             InventorySlot(id=1, max_length=self._NAME_LENGTH)
             .with_parent(self)
@@ -223,11 +218,6 @@ class InventoryWheel(UIElement, Sprite):
         self._showing_percent = 0.00
         self.animate_hide()  # NOTE: Will be instant on start, since `self._showing_percent == 0.00`
         self.update()
-
-    def with_hide_anchor(self, hide_anchor: Vec2, /) -> Self:
-        self.hide_anchor = hide_anchor
-        # Vec2(18.5, -4)
-        return self
 
     def animate_show(self) -> None:
         self._state = InventoryWheel.DisplayState.SHOWING
@@ -299,28 +289,28 @@ class InventoryWheel(UIElement, Sprite):
 
 
 class HotbarE(UIElement, Label):
-    position = Vec2(_UI_RIGHT_OFFSET, -5)
+    position = Vec2(settings.UI_RIGHT_OFFSET, -5)
     texture = ["Interact [E".rjust(11)]
     transparency = " "
     color = colex.SALMON
 
 
 class Hotbar1(UIElement, Label):
-    position = Vec2(_UI_RIGHT_OFFSET, -3)
+    position = Vec2(settings.UI_RIGHT_OFFSET, -3)
     texture = ["Eat [1".rjust(11)]
     transparency = " "
     color = colex.SANDY_BROWN
 
 
 class Hotbar2(UIElement, Label):
-    position = Vec2(_UI_RIGHT_OFFSET, -2)
+    position = Vec2(settings.UI_RIGHT_OFFSET, -2)
     texture = ["Drink [2".rjust(11)]
     transparency = " "
     color = colex.AQUA
 
 
 class Hotbar3(UIElement, Label):
-    position = Vec2(_UI_RIGHT_OFFSET, -1)
+    position = Vec2(settings.UI_RIGHT_OFFSET, -1)
     texture = ["Heal [3".rjust(11)]
     transparency = " "
     color = colex.PINK
@@ -387,7 +377,7 @@ class HealthBar(InfoBar):
     )
     _CHANNEL_HURT = pygame.mixer.Channel(1)
     _LABEL = "Health"
-    position = Vec2(_UI_LEFT_OFFSET, -5)
+    position = Vec2(settings.UI_LEFT_OFFSET, -5)
     color = colex.PALE_VIOLET_RED
 
     def on_change(self, change: float, _cells_changed: int) -> None:
@@ -410,7 +400,7 @@ class OxygenBar(InfoBar):
     _CHANNEL_BREATH = pygame.mixer.Channel(2)
     _CHANNEL_BUBBLE = pygame.mixer.Channel(3)
     _LABEL = "O2"
-    position = Vec2(_UI_LEFT_OFFSET, -4)
+    position = Vec2(settings.UI_LEFT_OFFSET, -4)
     color = colex.AQUAMARINE
 
     def on_change(self, change: float, cells_changed: int) -> None:
@@ -423,14 +413,14 @@ class OxygenBar(InfoBar):
 class HungerBar(InfoBar):
     MAX_VALUE = 120
     _LABEL = "Food"
-    position = Vec2(_UI_LEFT_OFFSET, -3)
+    position = Vec2(settings.UI_LEFT_OFFSET, -3)
     color = colex.SANDY_BROWN
 
 
 class ThirstBar(InfoBar):
     MAX_VALUE = 90
     _LABEL = "Thirst"
-    position = Vec2(_UI_LEFT_OFFSET, -2)
+    position = Vec2(settings.UI_LEFT_OFFSET, -2)
     color = colex.AQUA
 
 
@@ -579,11 +569,15 @@ class ComposedHUD(HUDElement):
         self.oxygen_bar = OxygenBar(self)
         self.hunger_bar = HungerBar(self)
         self.thirst_bar = ThirstBar(self)
-        self.inventory = InventoryWheel(self, ref=inventory_ref)
-        self.hotbar_e = HotbarE(self)
-        self.hotbar_1 = Hotbar1(self)
-        self.hotbar_2 = Hotbar2(self)
-        self.hotbar_3 = Hotbar3(self)
+        self.inventory = InventoryWheel(
+            self,
+            ref=inventory_ref,
+            hide_anchor=Vec2(18.5, -4),
+        ).with_position(x=settings.UI_LEFT_OFFSET + 10, y=4)
+        self.hotbar_e = HotbarE(self).with_visibility(False)
+        self.hotbar_1 = Hotbar1(self).with_visibility(False)
+        self.hotbar_2 = Hotbar2(self).with_visibility(False)
+        self.hotbar_3 = Hotbar3(self).with_visibility(False)
         self.crafting_gui = Crafting(self)
 
 

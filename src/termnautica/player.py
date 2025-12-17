@@ -36,6 +36,7 @@ class PlayerDeathDrop(Interactable, Sprite):
     _DETECTION_OFFSET: Vec2 = Vec2(1, 1.5)
     _BUBBLE_SPAWN_OFFSET: Vec2 = Vec2(2, 3)
     _BUBBLE_SPAWN_SPREAD: int = 3
+    _HIDE_ANCHOR_OFFSET: Vec2 = Vec2(1, 1)
     color = colex.YELLOW
     texture = [
         " ╽ ",
@@ -45,10 +46,16 @@ class PlayerDeathDrop(Interactable, Sprite):
 
     def __init__(self) -> None:
         self.inventory = SizedInventory(slot_limit=8)
-        self._ui = ui.InventoryWheel(self, self.inventory)
+        ui_offset = Vec2(settings.UI_RIGHT_OFFSET - 10, 1)
+        self._ui = ui.InventoryWheel(
+            self,
+            ref=self.inventory,
+            hide_anchor=-ui_offset + self._HIDE_ANCHOR_OFFSET,
+        ).with_position(ui_offset)
         self._stop_submerging = False
 
     def grab_focus(self) -> None:
+        # self._ui.hide_anchor = self.global_position - self._ui.global_position
         super().grab_focus()
         self._ui.animate_show()
 
