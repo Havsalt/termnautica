@@ -579,8 +579,6 @@ class Player(ColliderComponent, Sprite):
 
         # Reset states
         self._current_interactable = None
-        self._current_action = None
-        self._key_just_pressed = False
 
 
 # The following player classes below are for co-op mode
