@@ -15,10 +15,9 @@ AssetLoader.animation_root = settings.ANIMATION_FOLDER
 AssetLoader.texture_root = settings.SPRITES_FOLDER
 random.seed(3)  # DEV
 
-pygame.mixer.init()
-
 from . import ocean
-from .player import Player, Player1, Player2
+from .player import Player1, Player2
+from .input_handler import Keyboard, Controller
 from .buildings.lifepod import Lifepod
 
 
@@ -66,12 +65,19 @@ class App(Engine):
 
     def __init__(self) -> None:
         ## Set up co-op players and cameras
+        pygame.event.pump()  # Required to detect contollers
         self.player = Player1()
+        if (joystick_count := pygame.joystick.get_count()) >= 1:
+            self.player.input_handler = Controller(device_id=0)
         # Attatch new camera to player, *after* player has been created
         Camera.current.parent = self.player
         just_current_camera = Camera.current
         Camera.current = self.second_camera
         self.player_2 = Player2()
+        if joystick_count >= 2:
+            self.player_2.input_handler = Controller(device_id=1)
+        elif joystick_count == 1:
+            self.player_2.input_handler = Keyboard()  # Default "good" keybinds
         self.second_camera.parent = self.player_2
         Camera.current = just_current_camera
         # Camera.current = DevCamera()
@@ -128,10 +134,11 @@ class App(Engine):
         # FishSpawner().with_global_position(x=20, y=-10)
 
     def update(self) -> None:
+        # TODO: Add detection of controllers
+        pygame.event.pump()  # Fixes `Controller` support
         ocean.Water.advance_wave_time()
-        if keyboard.is_pressed("esc"):
+        if keyboard.is_pressed("Esc"):
             self.is_running = False
-            pygame.quit()
 
         self.dev_update()  # DEV
 
@@ -157,3 +164,4 @@ class App(Engine):
 def main() -> int | None:
     app = App()
     app.run()
+    pygame.quit()

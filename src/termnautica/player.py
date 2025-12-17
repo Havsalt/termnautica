@@ -15,7 +15,7 @@ from charz import (
 )
 
 from . import gear_types, projectiles, settings, ui, ocean
-from .input_handler import InputHandler, Keyboard, Controller, Action
+from .input_handler import InputHandler, Keyboard, Action
 from .props import Collectable, Interactable, Building, Targetable
 from .fabrication import Fabrication
 from .particles import Bubble, Blood
@@ -115,8 +115,7 @@ class Player(ColliderComponent, Sprite):
 
     _RANGED_REACH: float = 40
 
-    _input_handler: InputHandler = Keyboard()
-
+    input_handler: InputHandler = Keyboard()
     hitbox = Hitbox(size=Vec2(5, 3))
     z_index = 1
     color = colex.AQUA
@@ -170,7 +169,7 @@ class Player(ColliderComponent, Sprite):
 
     def update(self) -> None:
         # Order of tasks
-        self._input_handler.capture_states()
+        self.input_handler.capture_states()
         self.handle_gui()
         self.handle_movement()
         self.handle_interact_selection()
@@ -246,21 +245,21 @@ class Player(ColliderComponent, Sprite):
                 assert_never(slot)
 
     def handle_eating(self) -> None:
-        if self._input_handler.is_action_just_pressed(Action.EAT):
+        if self.input_handler.is_action_just_pressed(Action.EAT):
             for item in self.inventory.ids():
                 if item in consumables and ConsumableStat.HUNGER in consumables[item]:
                     self.consume_item(item)
                     break
 
     def handle_drinking(self) -> None:
-        if self._input_handler.is_action_just_pressed(Action.DRINK):
+        if self.input_handler.is_action_just_pressed(Action.DRINK):
             for item in self.inventory.ids():
                 if item in consumables and ConsumableStat.THIRST in consumables[item]:
                     self.consume_item(item)
                     break
 
     def handle_healing(self) -> None:
-        if self._input_handler.is_action_just_pressed(Action.HEAL):
+        if self.input_handler.is_action_just_pressed(Action.HEAL):
             for item in self.inventory.ids():
                 if item in consumables and ConsumableStat.HEALING in consumables[item]:
                     self.consume_item(item)
@@ -300,21 +299,21 @@ class Player(ColliderComponent, Sprite):
 
     def handle_gui(self) -> None:
         if not isinstance(self._current_interactable, Fabrication):
-            if self._input_handler.is_action_just_pressed(Action.OPEN_INVENTORY):
+            if self.input_handler.is_action_just_pressed(Action.OPEN_INVENTORY):
                 if self.hud.inventory.is_open():
                     self.hud.inventory.animate_hide()
                 else:
                     self.hud.inventory.animate_show()
             return
-        if self._input_handler.is_action_just_pressed(Action.SCROLL_DOWN):
+        if self.input_handler.is_action_just_pressed(Action.SCROLL_DOWN):
             self._current_interactable.attempt_select_next_recipe()
-        elif self._input_handler.is_action_just_pressed(Action.SCROLL_UP):
+        elif self.input_handler.is_action_just_pressed(Action.SCROLL_UP):
             self._current_interactable.attempt_select_previous_recipe()
 
     def handle_movement_in_building(self, velocity: Vec2) -> None:
         assert isinstance(self.parent, Building)
         # TODO: Check if is on floor first
-        if self._input_handler.is_action_just_pressed(Action.JUMP):
+        if self.input_handler.is_action_just_pressed(Action.JUMP):
             self._y_speed = -self._JUMP_STRENGTH
         combined_velocity = Vec2(velocity.x, self._y_speed).clamp(
             -self._MAX_SPEED,
@@ -326,7 +325,7 @@ class Player(ColliderComponent, Sprite):
 
     def handle_movement(self) -> None:
         # TODO: Apply axis snapping
-        velocity = self._input_handler.get_vector(
+        velocity = self.input_handler.get_vector(
             Action.MOVE_LEFT,
             Action.MOVE_RIGHT,
             Action.MOVE_UP,
@@ -443,7 +442,7 @@ class Player(ColliderComponent, Sprite):
             return
         assert isinstance(self._current_interactable, Interactable)
         # Trigger interaction function
-        if self._input_handler.is_action_just_pressed(Action.INTERACT):
+        if self.input_handler.is_action_just_pressed(Action.INTERACT):
             # TODO: Check for z_index change, so that it respects z_index change in on_interact
             # TODO: Check if current interactable is capable of crafting -> Use `Action.CRAFTING`
             self._current_interactable.on_interact(self)
@@ -478,7 +477,7 @@ class Player(ColliderComponent, Sprite):
             self._current_targetable = first
             # TODO: Do Harpoon aiming here, and fire if key pressed
             if (
-                self._input_handler.is_action_just_pressed(Action.THROW_HARPOON)
+                self.input_handler.is_action_just_pressed(Action.THROW_HARPOON)
                 and self._harpoon.model is not None
             ):
                 harpoon_info = gear[self._harpoon.model]
@@ -499,7 +498,7 @@ class Player(ColliderComponent, Sprite):
             return
         assert isinstance(self._current_targetable, Targetable)
         # Trigger interaction function
-        if self._input_handler.is_action_just_pressed(Action.INTERACT):
+        if self.input_handler.is_action_just_pressed(Action.INTERACT):
             # TODO: Check for z_index change, so that it respects z_index change in on_interact
             self._current_targetable.gain_target()
 
@@ -510,7 +509,7 @@ class Player(ColliderComponent, Sprite):
             return
         # Collect collectable that is selected
         # `self._current_interactable` is already in reach
-        if self._input_handler.is_action_just_pressed(Action.INTERACT):
+        if self.input_handler.is_action_just_pressed(Action.INTERACT):
             self._current_interactable.collect_into(self.inventory)
             self._current_interactable.queue_free()
             self._current_interactable = None
@@ -584,14 +583,13 @@ class Player1(Player):
     _HUD_TYPE = ui.ComposedHUD1
     position = Vec2(17, -3)
     color = colex.CYAN
-    _input_handler = Keyboard()
 
 
 class Player2(Player):
     _HUD_TYPE = ui.ComposedHUD2
     position = Vec2(-15, -3)
     color = colex.YELLOW
-    _input_handler = Keyboard(
+    input_handler = Keyboard(
         {
             Action.MOVE_LEFT: "H",
             Action.MOVE_RIGHT: "L",

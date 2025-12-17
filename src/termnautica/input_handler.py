@@ -15,6 +15,7 @@ type Percent = int
 
 @unique
 class Action(Enum):
+    # TODO: Have `Player` check for each action, and not assume they will have same trigger
     MOVE_LEFT = auto()
     MOVE_RIGHT = auto()
     MOVE_UP = auto()
@@ -128,11 +129,13 @@ class Keyboard:
 
 
 class Controller:
+    type DeviceID = int
     type Button = int
     type Axis = int
+    pygame.display.init()
+    pygame.joystick.init()
 
     class Trigger:
-        @unique
         class Limit(Enum):
             POSITIVE = auto()
             NEGATIVE = auto()
@@ -152,48 +155,67 @@ class Controller:
     def __init__(
         self,
         action_map: ActionMap[Controller.Button | Controller.Trigger] | None = None,
+        device_id: Controller.DeviceID | None = None,
     ) -> None:
-        # TODO: Map joystick ID
-        self._joystick = pygame.joystick.Joystick(0)
+        if device_id is not None:
+            self._joystick = pygame.joystick.Joystick(device_id)
+        else:  # Attempt to connect to the next available controller
+            # NOTE: This branch might be redundant, and param `device_id` should be manual
+            for attempt_id in range(pygame.joystick.get_count()):
+                try:
+                    joystick = pygame.joystick.Joystick(attempt_id)
+                except pygame.error:
+                    continue
+                self._joystick = joystick
+                break
+            else:  # nobreak
+                raise ValueError("Could not automatically find available controller")
+        self._action_states = dict[Action, bool]()
+        self._last_action_states = dict[Action, bool]()
         self._action_map: ActionMap[Controller.Button | Controller.Trigger] = (
             {  # Adding defaults at bottom of dict
                 Action.MOVE_LEFT: Controller.Trigger(
                     pygame.CONTROLLER_AXIS_LEFTX,
                     Controller.Trigger.Limit.NEGATIVE,
+                    deadzone=35,
                 ),
                 Action.MOVE_RIGHT: Controller.Trigger(
                     pygame.CONTROLLER_AXIS_LEFTX,
                     Controller.Trigger.Limit.POSITIVE,
+                    deadzone=35,
                 ),
                 Action.MOVE_UP: Controller.Trigger(
                     pygame.CONTROLLER_AXIS_LEFTY,
-                    Controller.Trigger.Limit.POSITIVE,
+                    Controller.Trigger.Limit.NEGATIVE,
+                    deadzone=35,
                 ),
                 Action.MOVE_DOWN: Controller.Trigger(
                     pygame.CONTROLLER_AXIS_LEFTY,
-                    Controller.Trigger.Limit.NEGATIVE,
+                    Controller.Trigger.Limit.POSITIVE,
+                    deadzone=35,
                 ),
                 Action.JUMP: pygame.CONTROLLER_BUTTON_A,
                 #
                 Action.INTERACT: pygame.CONTROLLER_BUTTON_X,
-                Action.CRAFT: pygame.CONTROLLER_BUTTON_Y,
+                Action.CRAFT: pygame.CONTROLLER_BUTTON_B,
                 Action.ATTACK: pygame.CONTROLLER_BUTTON_A,
                 Action.THROW_HARPOON: pygame.CONTROLLER_BUTTON_LEFTSHOULDER,
                 #
-                Action.EAT: pygame.CONTROLLER_BUTTON_A,
-                Action.DRINK: pygame.CONTROLLER_BUTTON_A,
-                Action.HEAL: pygame.CONTROLLER_BUTTON_A,
+                Action.EAT: pygame.CONTROLLER_BUTTON_DPAD_UP,
+                Action.DRINK: pygame.CONTROLLER_BUTTON_DPAD_DOWN,
+                Action.HEAL: pygame.CONTROLLER_BUTTON_DPAD_RIGHT,
                 #
                 Action.SCROLL_UP: pygame.CONTROLLER_BUTTON_LEFTSHOULDER,
                 Action.SCROLL_DOWN: pygame.CONTROLLER_BUTTON_RIGHTSHOULDER,
-                Action.CONFIRM: pygame.CONTROLLER_BUTTON_A,
-                Action.OPEN_INVENTORY: pygame.CONTROLLER_BUTTON_A,
+                Action.CONFIRM: pygame.CONTROLLER_BUTTON_B,
+                Action.OPEN_INVENTORY: pygame.CONTROLLER_BUTTON_Y,
             }
             | (action_map or {})  # Adds default actions if not defined
         )
         assert all(map(self._action_map.__contains__, Action)), "Missing actions"
 
     def capture_states(self) -> None:
+        """NOTE: Requires `pygame.event.pump` to be called *before*"""
         self._last_action_states = self._action_states
         self._action_states = {
             action: self.is_action_pressed(action) for action in Action

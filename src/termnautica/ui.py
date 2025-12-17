@@ -13,6 +13,7 @@ from charz import Node, Sprite, Label, Vec2, Self, clamp, group
 from . import settings
 from .item import ItemID, Recipe, Container
 
+
 pygame.mixer.init()
 
 
