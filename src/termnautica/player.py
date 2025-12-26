@@ -12,6 +12,7 @@ from charz import (
     ColliderComponent,
     Hitbox,
     Vec2,
+    group,
 )
 
 from . import gear_types, projectiles, settings, ui, ocean
@@ -19,12 +20,19 @@ from .input_handler import InputHandler, Keyboard, Action
 from .props import Collectable, Interactable, Building, Targetable
 from .fabrication import Fabrication
 from .particles import Bubble, Blood
-from .item import ItemID, Slot, ConsumableStat, SizedInventory, gear, consumables
+from .item import (
+    ItemID,
+    ItemCount,
+    Slot,
+    ConsumableStat,
+    SizedInventory,
+    gear,
+    consumables,
+)
 from .utils import move_toward
 
 
 type ActionName = str
-type Count = int
 
 
 ARROW_UP: int = 72
@@ -102,6 +110,7 @@ class PlayerDeathDrop(Interactable, Sprite):
             self._stop_submerging = True
 
 
+@group("player")
 class Player(ColliderComponent, Sprite):
     _GRAVITY: float = 0.91
     _MAX_SPEED: Vec2 = Vec2(2, 2)
@@ -195,7 +204,7 @@ class Player(ColliderComponent, Sprite):
         if self.health == 0:
             self.on_death()
 
-    def consume_item(self, item: ItemID, count: Count = 1) -> None:
+    def consume_item(self, item: ItemID, count: ItemCount = 1) -> None:
         assert item in consumables, (
             f"All consumable items require additional metadata, for item: {item}"
         )

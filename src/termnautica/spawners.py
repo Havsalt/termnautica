@@ -4,7 +4,7 @@ from types import UnionType, get_original_bases
 from typing import Any, Self, get_origin, get_args, assert_never
 
 import colex
-from charz import Scene, Group, Sprite, Vec2
+from charz import Scene, Group, Sprite, Vec2, group
 
 from . import fish, ores, ocean
 from .kelp import Kelp
@@ -19,7 +19,7 @@ class SpawnMode(Enum):
     # CYCLE = auto()
 
 
-# TODO: Implement
+@group("spawner")
 class Spawner[T: Sprite](Sprite):
     _SPAWN_INTERVAL: int = 100
     _SPAWN_OFFSET: Vec2 = Vec2.ZERO
@@ -28,38 +28,38 @@ class Spawner[T: Sprite](Sprite):
     _INITIAL_SPAWN: bool = True
     color = colex.BLACK
     texture = ["<Unset Spawner Texture>"]
-    _time_until_spawn: int = 0
-    _spawned_instances: list[T]  # TODO: Remove from list when freed
+    time_until_spawn: int = 0
+    spawned_instances: list[T]
 
     # Make unique in `__new__`, so `__init__` can be used to init spawner
     def __new__(cls, *args: Any, **kwargs: Any) -> Self:
         instance = super().__new__(cls, *args, **kwargs)
-        instance._spawned_instances = []  # Make unique
+        instance.spawned_instances = []  # Make unique
         if not instance._INITIAL_SPAWN:
-            instance._time_until_spawn = instance._SPAWN_INTERVAL
+            instance.time_until_spawn = instance._SPAWN_INTERVAL
         return instance
 
     def check_active_spawns_count(self) -> int:
         # NOTE: SIDE EFFECT: Remove from `_spawned_instances` if instance not alive
         count = 0
-        for instance in self._spawned_instances:  # O(n) loop
+        for instance in self.spawned_instances:  # O(n) loop
             if instance.uid in Scene.current.groups[Group.TEXTURE]:  # O(1) lookup
                 count += 1
             else:
-                self._spawned_instances.remove(instance)
+                self.spawned_instances.remove(instance)
         return count
 
     def update(self) -> None:
-        self._time_until_spawn -= 1
+        self.time_until_spawn -= 1
         if self.check_active_spawns_count() < self._MAX_ACTIVE_SPAWNS:
-            if self._time_until_spawn <= 0:
-                self._time_until_spawn = self._SPAWN_INTERVAL
+            if self.time_until_spawn <= 0:
+                self.time_until_spawn = self._SPAWN_INTERVAL
                 self.spawn()
         else:
-            self._time_until_spawn = self._SPAWN_INTERVAL
+            self.time_until_spawn = self._SPAWN_INTERVAL
 
     def spawn(self) -> None:
-        kinds = self._get_spawn_types()
+        kinds = self.get_spawn_types()
 
         match self._SPAWN_MODE:
             case SpawnMode.RANDOM:
@@ -69,7 +69,7 @@ class Spawner[T: Sprite](Sprite):
                     self.global_position + self._SPAWN_OFFSET
                 )
                 self.init_spawned(instance)
-                self._spawned_instances.append(instance)
+                self.spawned_instances.append(instance)
 
             case SpawnMode.ALL:
                 for kind in kinds:
@@ -77,7 +77,7 @@ class Spawner[T: Sprite](Sprite):
                         self.global_position + self._SPAWN_OFFSET
                     )
                     self.init_spawned(instance)
-                    self._spawned_instances.append(instance)
+                    self.spawned_instances.append(instance)
 
             case SpawnMode.ALL_UNTIL:
                 for kind in random.choices(kinds, k=len(kinds)):  # Shuffle random
@@ -85,25 +85,30 @@ class Spawner[T: Sprite](Sprite):
                         self.global_position + self._SPAWN_OFFSET
                     )
                     self.init_spawned(instance)
-                    self._spawned_instances.append(instance)
-                    if len(self._spawned_instances) >= self._MAX_ACTIVE_SPAWNS:
+                    self.spawned_instances.append(instance)
+                    if len(self.spawned_instances) >= self._MAX_ACTIVE_SPAWNS:
                         break
 
             case SpawnMode.FILL:
-                while len(self._spawned_instances) < self._MAX_ACTIVE_SPAWNS:
+                while len(self.spawned_instances) < self._MAX_ACTIVE_SPAWNS:
                     kind = random.choice(kinds)
                     instance = kind().with_global_position(
                         self.global_position + self._SPAWN_OFFSET
                     )
                     self.init_spawned(instance)
-                    self._spawned_instances.append(instance)
+                    self.spawned_instances.append(instance)
 
             case _:
                 assert_never(self._SPAWN_MODE)
 
-    def init_spawned(self, instance: T) -> None: ...
+    def init_spawned(self, instance: T) -> None:
+        """Spawn hook.
 
-    def _get_spawn_types(self) -> tuple[type[T], ...]:
+        Args:
+            instance (T: Sprite): Instance spawned.
+        """
+
+    def get_spawn_types(self) -> tuple[type[T], ...]:
         kind = get_original_bases(self.__class__)[0].__args__[0]
         if get_origin(kind) is UnionType:
             return get_args(kind)
@@ -177,7 +182,7 @@ class BubbleSpawner(Spawner[Bubble]):
     visible = False
 
     def __init__(self) -> None:
-        self._time_until_spawn = random.randint(0, self._SPAWN_INTERVAL)
+        self.time_until_spawn = random.randint(0, self._SPAWN_INTERVAL)
 
     def init_spawned(self, instance: Bubble) -> None:
-        instance.z_index -= 2  # Hide behind `OceanFloor`
+        instance.z_index -= 2  # Makes it hide behind `OceanFloor`

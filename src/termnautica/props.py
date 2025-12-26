@@ -5,8 +5,7 @@ Classes defined here will be used as `mixin components`.
 They may also provide methods, either to be overwritten, or as base case.
 """
 
-from collections import defaultdict
-from typing import Protocol, Self
+from typing import Self
 
 import pygame
 import colex

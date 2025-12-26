@@ -11,13 +11,9 @@ from colex import ColorValue
 from charz import Node, Sprite, Label, Vec2, clamp, group
 
 from . import settings
-from .item import ItemID, Recipe, Container
+from .item import ItemID, ItemCount, Recipe, Container
 
 
-pygame.mixer.init()
-
-
-type Count = int
 type Craftable = bool
 type IdgredientCount = int
 type Char = str
@@ -59,7 +55,7 @@ class InventorySlot(UIElement, Label):
         self._scroll_frame: int = 0
         self._cutoff_amount: int | None = None
 
-    def set_item(self, item: ItemID, count: Count) -> None:
+    def set_item(self, item: ItemID, count: ItemCount) -> None:
         self.text = self._PREFIX.format(self._id) + self._fit_item_info(
             item, count, self._max_item_info_length
         )
@@ -108,7 +104,7 @@ class InventorySlot(UIElement, Label):
     def _fit_item_info(
         self,
         item: ItemID,
-        count: Count,
+        count: ItemCount,
         width: int,
     ) -> str:
         """Fit item name for custom inventory wheel sprite.
@@ -118,7 +114,7 @@ class InventorySlot(UIElement, Label):
 
         Args:
             item (ItemID): Enum variant.
-            count (Count): Item count.
+            count (ItemCount): Item count.
             width (int): Max spaces to shorten, and min spaces to fill spaces.
 
         Returns:

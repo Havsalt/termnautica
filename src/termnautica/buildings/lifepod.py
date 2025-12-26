@@ -7,7 +7,6 @@ from .smelter import Smelter
 from .fabricator import Fabricator
 from .nutrient_synthesizer import NutrientSynthesizer
 from .medbay import Medbay
-from .grill import Grill
 from .assembler import Assembler
 
 

@@ -28,7 +28,7 @@ class HarpoonSpear(Sprite):
             f"Target {self._target} missing `Sprite` base"
         )
         assert isinstance(self._damage, (float, int)), (
-            f"Damage is not set. Use `.with_damage(...)`"
+            "Damage is not set. Use `.with_damage(...)`"
         )
 
         # Check if target is still in world

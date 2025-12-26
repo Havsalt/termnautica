@@ -1,24 +1,24 @@
 import os
-import random
+
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
-import pygame
-import keyboard
-import colex
-from charz import Engine, Clock, Camera, AssetLoader, Vec2
+import pygame  # noqa: E402
+import keyboard  # noqa: E402
+import colex  # noqa: E402
+from charz import Engine, Clock, Camera, Label, AssetLoader, Vec2  # noqa: E402
 
-from . import settings
-from .split_screen import FastSplitScreen
+pygame.mixer.init()
+
+from . import settings  # noqa: E402
+from .split_screen import FastSplitScreen  # noqa: E402
 
 AssetLoader.animation_root = settings.ANIMATION_FOLDER
 AssetLoader.texture_root = settings.SPRITES_FOLDER
-random.seed(3)  # DEV
 
-from . import ocean
-from .player import Player1, Player2
-from .input_handler import Keyboard, Controller
-from .buildings.lifepod import Lifepod
+from . import ocean, world  # noqa: E402
+from .player import Player1, Player2  # noqa: E402
+from .input_handler import Keyboard, Controller  # noqa: E402
 
 
 # NOTE: Game time is calculated in frames (int),
@@ -37,10 +37,8 @@ class DevCamera(Camera):
             self.position.y += 1
 
 
-# TODO: LIFEPOD 2/3: Respawn
-# TODO: INVENTORY SIZE: 0/1
-# TODO: PREVENT HEALING ON CRUSHING DEPTHS
-# TODO: Make `HealthCarrier` prop
+# TODO: INVENTORY SIZE: 1/2
+# ?TODO: PREVENT HEALING ON CRUSHING DEPTHS?
 
 
 class App(Engine):
@@ -82,13 +80,16 @@ class App(Engine):
         Camera.current = just_current_camera
         # Camera.current = DevCamera()
         ## Environment and structures
-        # Attatch lifepod to waving water
-        ocean.generate_floor()
-        ocean.generate_water()
-        # TODO: Update `Lifepod` position internally using ocean formula
-        self.lifepod = Lifepod()
-        middle_ocean_water = ocean.Water().save_rest_location()
-        self.lifepod.parent = middle_ocean_water
+        self.world_seed = world.create()
+        # DEV
+        Label(
+            Camera.current,
+            z_index=1200,
+            position=Vec2(-1, -10),
+            text=f"| World Seed: {self.world_seed} |",
+            color=colex.REVERSE + colex.WHITE_SMOKE,
+            centered=True,
+        )
         ## Music
         pygame.mixer_music.load(settings.MUSIC_FOLDER / "main.mp3")
         pygame.mixer_music.set_volume(0.50)
@@ -139,6 +140,8 @@ class App(Engine):
         ocean.Water.advance_wave_time()
         if keyboard.is_pressed("Esc"):
             self.is_running = False
+            # DEV
+            world.save(seed=self.world_seed)
 
         self.dev_update()  # DEV
 
