@@ -22,14 +22,14 @@ all = [
 
 [[package]]
 name = "charz-core"
-version = "0.1.4"
+version = "0.1.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "linflex" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bb/ab/b572265eb8d0e6fcea1b75d86545f63c9f49b2149a043059c4047b599913/charz_core-0.1.4.tar.gz", hash = "sha256:d13267ad6f088f4d72b7a12fddf79a22524685b41ecf7ad646a7aa7f0edf42e5", size = 12944, upload-time = "2025-12-13T11:17:48.979Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/65/b7/1986d1e91c73b8faf16082382d740be041d56fa5b6e8f4c70cb9c8d24602/charz_core-0.1.5.tar.gz", hash = "sha256:ef429368d8920e47fae28969d4f7108f238fd4039f968d3801a74b7da93f9d0f", size = 12885, upload-time = "2025-12-17T13:53:01.07Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3c/5d/84181c550ca2b0da0bbd23a09bb494c9baa589c0f286a083af85085951cc/charz_core-0.1.4-py3-none-any.whl", hash = "sha256:e346a7381e0c9dde25d85436cb21e904805de84f9e27a954c4dcd97ac229d131", size = 17036, upload-time = "2025-12-13T11:17:47.785Z" },
+    { url = "https://files.pythonhosted.org/packages/f5/be/1ef16dfcc1f6ea34a2871dd54b44dcf8a432d6dfe36419973978b62f4898/charz_core-0.1.5-py3-none-any.whl", hash = "sha256:b70d933daf38b14ab8655d49abd508cbcd6c7dd2d0bccd81201cddde4397342c", size = 16982, upload-time = "2025-12-17T13:52:59.803Z" },
 ]
 
 [[package]]
