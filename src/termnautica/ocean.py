@@ -181,6 +181,10 @@ def generate_floor():
                     spawners.CrystalSpawner().with_global_position(
                         abyss_wall_point + spawners.CrystalSpawner.position
                     )
+                elif random.randint(1, 80) == 1:
+                    spawners.SwordFishSpawner().with_global_position(
+                        abyss_wall_point + spawners.CrystalSpawner.position
+                    )
 
         # Store point over time - Used for collision
         Floor.points.add((point.x, point.y))

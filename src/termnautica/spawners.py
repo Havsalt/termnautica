@@ -6,7 +6,7 @@ from typing import Any, Self, get_origin, get_args, assert_never
 import colex
 from charz import Scene, Group, Sprite, Vec2
 
-from . import fish, ores, ocean
+from . import fish, ores, ocean, settings
 from .kelp import Kelp
 from .particles import Bubble
 
@@ -21,14 +21,15 @@ class SpawnMode(Enum):
 
 # TODO: Implement
 class Spawner[T: Sprite](Sprite):
-    _SPAWN_INTERVAL: int = 100
+    _SPAWN_INTERVAL: float = 6.25 * settings.FPS
     _SPAWN_OFFSET: Vec2 = Vec2.ZERO
     _MAX_ACTIVE_SPAWNS: int = 1
     _SPAWN_MODE: SpawnMode = SpawnMode.RANDOM
     _INITIAL_SPAWN: bool = True
+    position: Vec2 = Vec2.ZERO  # Required placeholder
     color = colex.BLACK
     texture = ["<Unset Spawner Texture>"]
-    _time_until_spawn: int = 0
+    _time_until_spawn: float = 0
     _spawned_instances: list[T]  # TODO: Remove from list when freed
 
     # Make unique in `__new__`, so `__init__` can be used to init spawner
@@ -168,16 +169,24 @@ class FishSpawner(
             instance.position += Vec2.UP
 
 
+class SwordFishSpawner(Spawner[fish.SwordFish]):
+    _INITIAL_SPAWN = False
+    _MAX_ACTIVE_SPAWNS = 2
+    _SPAWN_MODE = SpawnMode.ALL_UNTIL
+    _SPAWN_INTERVAL = 60 * settings.FPS
+    color = colex.ORANGE_RED
+    texture = ["',>"]
+
+
 class BubbleSpawner(Spawner[Bubble]):
     _INITIAL_SPAWN = False
-    _SPAWN_INTERVAL = 8
+    _SPAWN_INTERVAL = 8 * settings.FPS
     _MAX_ACTIVE_SPAWNS = 2
-    position = Vec2.ZERO
     centered = True
     visible = False
 
     def __init__(self) -> None:
-        self._time_until_spawn = random.randint(0, self._SPAWN_INTERVAL)
+        self._time_until_spawn = random.uniform(0, self._SPAWN_INTERVAL)
 
     def init_spawned(self, instance: Bubble) -> None:
         instance.z_index -= 2  # Hide behind `OceanFloor`
