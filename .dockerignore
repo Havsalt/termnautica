@@ -1,6 +1,7 @@
 **
 !src
 !assets
+!saves
 !python
 !pyproject.toml
 !.python-version
