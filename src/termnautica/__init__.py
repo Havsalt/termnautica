@@ -98,10 +98,11 @@ class App(Engine):
         self.dev()
 
     def dev(self) -> None:
-        from .fish import SwordFish, Nemo
+        # from .fish import SwordFish, Nemo
+        from .fish import Nemo
         # from .birds import SmallBird, MediumBird, LargeBird
 
-        SwordFish(position=Vec2(80, -18))
+        # SwordFish(position=Vec2(80, -18))
         Nemo(position=Vec2(-40, -20))
 
         # for i in range(-10, 10):
@@ -119,9 +120,9 @@ class App(Engine):
         #         y=random.randint(0, 10) - 20,
         #     )
 
-        from .buildings.grill import Grill
+        # from .buildings.grill import Grill
 
-        Grill(position=Vec2(10, 10))
+        # Grill(position=Vec2(10, 10))
 
         # from .fish import WaterFish
         # from .spawners import FishSpawner
