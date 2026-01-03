@@ -10,21 +10,23 @@ from .utils import groupwise, randf
 
 
 type Coordinate = tuple[int, int]
+type Percent = int
+type Depth = int
 
 
 # TODO: Add spawning requirements, like min and max height
 # NOTE: Order will be randomized for each attempt
 # Percent in int | Min 1, Max 100
-SPAWN_CHANCES: dict[type[spawners.Spawner], int] = {
+SPAWN_CHANCES: dict[type[spawners.Spawner], Percent] = {
     spawners.KelpSpawner: 10,
     spawners.OreSpawner: 4,
     spawners.FishSpawner: 1,
     spawners.BubbleSpawner: 1,
 }
-DEPTH_LAYERS: tuple[int, ...] = (
+DEPTH_LAYERS: tuple[Depth, ...] = (
     20,  # Tier 0 - "Safe"
     40,  # Tier 1
-    60,  # TIer 2
+    60,  # Tier 2
 )
 
 
@@ -43,8 +45,8 @@ class Floor(Sprite):
     @classmethod
     def has_point_inside(cls, point: Coordinate) -> bool:
         # With "Inside", I mean under any tile in Y-axis (including tile location itself)
-        for floor in cls.points:
-            if floor[0] == point[0] and floor[1] <= point[1]:
+        for floor_point in cls.points:
+            if floor_point[0] == point[0] and floor_point[1] <= point[1]:
                 return True
         return False
 
@@ -64,14 +66,14 @@ class Water(Sprite):
     z_index = -1
     color = colex.MEDIUM_AQUAMARINE  # + colex.from_rgb(0, 150, 255, background=True)
     texture = ["~"]
-    _wave_time_remaining: ClassVar[float] = 0
+    wave_time_remaining: ClassVar[float] = 0
     _rest_location: Vec2
 
     @classmethod
     def advance_wave_time(cls) -> None:  # Call from `App.update`
-        cls._wave_time_remaining -= 1
-        if cls._wave_time_remaining < 0:
-            cls._wave_time_remaining = cls._WAVE_DURATION
+        cls.wave_time_remaining -= 1
+        if cls.wave_time_remaining < 0:
+            cls.wave_time_remaining = cls._WAVE_DURATION
 
     @classmethod
     def wave_height_at(cls, wave_origin_x: float) -> float:
@@ -85,7 +87,7 @@ class Water(Sprite):
         """
         # Write in math symbols that I'm used to
         phi = wave_origin_x / cls._WAVE_LENGTH
-        x = cls._wave_time_remaining / cls._WAVE_INTERVAL
+        x = cls.wave_time_remaining / cls._WAVE_INTERVAL
         # Asin(cx + phi) + d
         return cls._WAVE_AMPLITUDE * sin(2 * PI * x + phi) + cls.REST_LEVEL
 
@@ -118,7 +120,7 @@ def generate_water() -> None:
         (
             Water()
             .with_position(
-                x=x - settings.WORLD_WIDTH // 2,
+                x=(x - settings.WORLD_WIDTH // 2),
                 y=random.randint(0, 1),
             )
             .save_rest_location()
@@ -135,7 +137,7 @@ def attempt_generate_spawner_at(location: Vec2) -> None:
             break
 
 
-def generate_floor():
+def generate_floor() -> None:
     depth = 0
     texture_points: list[Vec2] = []
 

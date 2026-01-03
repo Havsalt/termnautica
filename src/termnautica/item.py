@@ -15,7 +15,7 @@ from enum import Enum, StrEnum, auto, unique
 from typing import NewType, Protocol
 
 
-type Count = int  # Positive
+type ItemCount = int  # Positive
 type Change = float
 type NonNegative = int
 """Positive `Integer`, including `0`; `[0, INF>`"""
@@ -23,8 +23,8 @@ type NonNegative = int
 
 @dataclass(kw_only=True, frozen=True, slots=True)
 class Recipe:
-    products: dict[ItemID, Count]
-    ingredients: dict[ItemID, Count]
+    products: dict[ItemID, ItemCount]
+    ingredients: dict[ItemID, ItemCount]
 
 
 @unique
@@ -190,22 +190,22 @@ consumables: dict[ItemID, dict[ConsumableStat, Change]] = {
 
 class Container(Protocol):
     def ids(self) -> tuple[ItemID, ...]: ...
-    def slot_count(self) -> Count: ...
+    def slot_count(self) -> ItemCount: ...
     def has(self, item: ItemID) -> bool: ...
-    def count(self, item: ItemID) -> Count: ...
-    def set(self, item: ItemID, count: Count) -> None:
+    def count(self, item: ItemID) -> ItemCount: ...
+    def set(self, item: ItemID, count: ItemCount) -> None:
         """Has to remove items with count `<= 0`"""
 
-    def take(self, item: ItemID, count: Count) -> None:
+    def take(self, item: ItemID, count: ItemCount) -> None:
         """Has to remove items with count `<= 0`"""
 
-    def give(self, item: ItemID, count: Count) -> None:
+    def give(self, item: ItemID, count: ItemCount) -> None:
         """Has to create item if not exists"""
 
 
 class SizedInventory:
     def __init__(self, slot_limit: NonNegative | None = None) -> None:
-        self._default_dict = defaultdict[ItemID, Count](int)
+        self._default_dict = defaultdict[ItemID, ItemCount](int)
         self.slot_limit = slot_limit
 
     def __str__(self) -> str:
@@ -214,22 +214,22 @@ class SizedInventory:
     def ids(self) -> tuple[ItemID, ...]:
         return tuple(self._default_dict.keys())
 
-    def slot_count(self) -> Count:
+    def slot_count(self) -> ItemCount:
         return len(self._default_dict)
 
     def has(self, item: ItemID) -> bool:
         return item in self._default_dict
 
-    def count(self, item: ItemID) -> Count:
+    def count(self, item: ItemID) -> ItemCount:
         return self._default_dict[item]
 
-    def set(self, item: ItemID, count: Count) -> None:
+    def set(self, item: ItemID, count: ItemCount) -> None:
         if count == 0:
             del self._default_dict[item]
         else:
             self._default_dict[item] = count
 
-    def take(self, item: ItemID, count: Count) -> None:
+    def take(self, item: ItemID, count: ItemCount) -> None:
         self._default_dict[item] -= count
         if self._default_dict[item] == 0:
             del self._default_dict[item]
@@ -241,7 +241,7 @@ class SizedInventory:
     def clear(self) -> None:
         self._default_dict.clear()
 
-    def give(self, item: ItemID, count: Count) -> None:
+    def give(self, item: ItemID, count: ItemCount) -> None:
         self._default_dict[item] += count
         if self.slot_limit is not None:
             if len(self._default_dict) > self.slot_limit:

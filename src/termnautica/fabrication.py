@@ -20,9 +20,6 @@ def _ensure_player() -> None:
         from .player import Player
 
 
-type Count = int
-
-
 # NOTE: Has to be *before* `Interactable` in mro
 class Fabrication(Crafting):  # Extended Component (mixin class)
     _selected_recipe_index: int = 0  # Persist when GUI is closed
@@ -107,7 +104,7 @@ class Fabrication(Crafting):  # Extended Component (mixin class)
             self.craft_by_index(actor.inventory)
             # After crafting, equip *all* equippables
             for product in self._RECIPES[self._selected_recipe_index].products:
-                if not product in gear:
+                if product not in gear:
                     continue
                 if product in gear:
                     actor.equip_gear(product)

@@ -14,8 +14,9 @@ authors = [
 ]
 dependencies = [
     "charz-rust>=0.2.3",
-    "charz[all]~=0.1.0",
+    "charz[all]~=0.1.3",
     "pygame~=2.6",
+    "tomli-w~=1.2",
 ]
 readme = "README.md"
 license = { file = "LICENSE" }

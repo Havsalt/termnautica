@@ -3,6 +3,7 @@ from pathlib import Path as _Path
 
 FPS: float = 16
 WORLD_WIDTH: int = 500 + 500
+SAVE_FOLDER = _Path(__file__).parent / "saves"
 ASSETS_FOLDER = _Path(__file__).parent.joinpath("assets")
 SPRITES_FOLDER = ASSETS_FOLDER / "sprites"
 ANIMATION_FOLDER = ASSETS_FOLDER / "animations"
