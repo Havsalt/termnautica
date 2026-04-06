@@ -29,8 +29,8 @@ class Spawner[T: Sprite](Sprite):
     position: Vec2 = Vec2.ZERO  # Required placeholder
     color = colex.BLACK
     texture = ["<Unset Spawner Texture>"]
-    _time_until_spawn: float = 0
-    _spawned_instances: list[T]  # TODO: Remove from list when freed
+    time_until_spawn: float = 0
+    spawned_instances: list[T]  # TODO: Remove from list when freed
 
     # Make unique in `__new__`, so `__init__` can be used to init spawner
     def __new__(cls, *args: Any, **kwargs: Any) -> Self:
@@ -191,7 +191,7 @@ class BubbleSpawner(Spawner[Bubble]):
     visible = False
 
     def __init__(self) -> None:
-        self._time_until_spawn = random.uniform(0, self._SPAWN_INTERVAL)
+        self.time_until_spawn = random.uniform(0, self._SPAWN_INTERVAL)
 
     def init_spawned(self, instance: Bubble) -> None:
         instance.z_index -= 2  # Makes it hide behind `OceanFloor`
