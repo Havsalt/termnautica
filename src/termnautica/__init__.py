@@ -89,6 +89,7 @@ class App(Engine):
             text=f"| World Seed: {self.world_seed} |",
             color=colex.REVERSE + colex.WHITE_SMOKE,
             centered=True,
+            visible=False,
         )
         ## Music
         pygame.mixer_music.load(settings.MUSIC_FOLDER / "main.mp3")
