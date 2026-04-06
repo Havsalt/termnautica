@@ -53,7 +53,7 @@ class PlayerDeathDrop(Interactable, Sprite):
     ]
 
     def __init__(self) -> None:
-        self.inventory = SizedInventory(slot_limit=8)
+        self.inventory = SizedInventory(slot_limit=20)
         ui_offset = Vec2(settings.UI_RIGHT_OFFSET - 10, 1)
         self._ui = ui.InventoryWheel(
             self,
@@ -147,7 +147,7 @@ class Player(ColliderComponent, Sprite):
     _current_targetable: Sprite | None = None
 
     def __init__(self) -> None:
-        self.inventory = SizedInventory(slot_limit=8)
+        self.inventory = SizedInventory(slot_limit=20)
         # Gear - May be base model; `None`
         self._knife = gear_types.Knife(model=None)
         self._diving_mask = gear_types.DivingMask(model=None)
@@ -321,10 +321,10 @@ class Player(ColliderComponent, Sprite):
                 else:
                     self.hud.inventory.animate_show()
             return
-        if self.input_handler.is_action_just_pressed(Action.SCROLL_DOWN):
-            self._current_interactable.attempt_select_next_recipe()
-        elif self.input_handler.is_action_just_pressed(Action.SCROLL_UP):
+        if self.input_handler.is_action_just_pressed(Action.SCROLL_UP):
             self._current_interactable.attempt_select_previous_recipe()
+        elif self.input_handler.is_action_just_pressed(Action.SCROLL_DOWN):
+            self._current_interactable.attempt_select_next_recipe()
 
     def handle_movement_in_building(self, velocity: Vec2) -> None:
         assert isinstance(self.parent, Building)
